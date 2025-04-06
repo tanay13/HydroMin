@@ -531,8 +531,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
 				return res.status(401).json({ message: "Invalid credentials" });
 			}
 
-			const token = generateToken(user);
-			res.json({ token, user: { ...user, password: undefined } });
+			// Generate token with user data
+			const token = await generateToken(user);
+
+			// Set CORS headers
+			res.setHeader("Access-Control-Allow-Origin", "*");
+			res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+			res.setHeader(
+				"Access-Control-Allow-Headers",
+				"Content-Type, Authorization"
+			);
+
+			// Send response with user data (excluding password)
+			res.json({
+				token,
+				user: {
+					id: user.id,
+					username: user.username,
+					email: user.email,
+					name: user.name,
+					role: user.role,
+				},
+			});
 		} catch (error) {
 			if (error instanceof z.ZodError) {
 				const validationError = fromZodError(error);

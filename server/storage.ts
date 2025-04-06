@@ -27,26 +27,24 @@ import { eq, desc, count, sum, sql, and, gte, lte } from "drizzle-orm";
 import { setupDatabase } from "./db-setup";
 
 // Interface for storage operations
-export interface IStorage {
+interface IStorage {
 	// User operations
-	getUser(id: number): Promise<User | undefined>;
-	getUserByUsername(username: string): Promise<User | undefined>;
+	getUser(id: number): Promise<User>;
+	getUserByUsername(username: string): Promise<User>;
 	getUserByEmail(email: string): Promise<User | undefined>;
 	getAllUsers(): Promise<User[]>;
 	createUser(user: InsertUser): Promise<User>;
-	updateUser(id: number, data: Partial<User>): Promise<User | undefined>;
+	updateUser(id: number, data: Partial<User>): Promise<User>;
 	deleteUser(id: number): Promise<boolean>;
 
 	// Inventory operations
 	getAllInventory(): Promise<Inventory[]>;
-	getInventoryByBottleSize(
-		bottleSize: BottleSize
-	): Promise<Inventory | undefined>;
+	getInventoryByBottleSize(bottleSize: BottleSize): Promise<Inventory>;
 	createInventory(inventory: InsertInventory): Promise<Inventory>;
 	updateInventory(
 		id: number,
-		data: Partial<Inventory>
-	): Promise<Inventory | undefined>;
+		data: Partial<InsertInventory>
+	): Promise<Inventory>;
 
 	// Order operations
 	getAllOrders(): Promise<Order[]>;
@@ -84,17 +82,23 @@ export interface IStorage {
 // DatabaseStorage implementation for PostgreSQL
 export class DatabaseStorage implements IStorage {
 	// User operations
-	async getUser(id: number): Promise<User | undefined> {
+	async getUser(id: number): Promise<User> {
 		const [user] = await db.select().from(users).where(eq(users.id, id));
-		return user;
+		if (!user) {
+			throw new Error(`User with id ${id} not found`);
+		}
+		return user as User;
 	}
 
-	async getUserByUsername(username: string): Promise<User | undefined> {
+	async getUserByUsername(username: string): Promise<User> {
 		const [user] = await db
 			.select()
 			.from(users)
 			.where(eq(users.username, username));
-		return user;
+		if (!user) {
+			throw new Error(`User with username ${username} not found`);
+		}
+		return user as User;
 	}
 
 	async getUserByEmail(email: string): Promise<User | undefined> {
@@ -111,12 +115,18 @@ export class DatabaseStorage implements IStorage {
 		const result = await db.execute(sql`SELECT LAST_INSERT_ID() as id`);
 		const id = (result as any)[0][0].id;
 		const [user] = await db.select().from(users).where(eq(users.id, id));
+		if (!user) {
+			throw new Error("Failed to create user");
+		}
 		return user;
 	}
 
-	async updateUser(id: number, data: Partial<InsertUser>): Promise<User> {
+	async updateUser(id: number, data: Partial<User>): Promise<User> {
 		await db.update(users).set(data).where(eq(users.id, id));
 		const [user] = await db.select().from(users).where(eq(users.id, id));
+		if (!user) {
+			throw new Error(`User with id ${id} not found`);
+		}
 		return user;
 	}
 
@@ -136,14 +146,17 @@ export class DatabaseStorage implements IStorage {
 		return await db.select().from(inventory);
 	}
 
-	async getInventoryByBottleSize(
-		bottleSize: BottleSize
-	): Promise<Inventory | undefined> {
+	async getInventoryByBottleSize(bottleSize: BottleSize): Promise<Inventory> {
 		const [item] = await db
 			.select()
 			.from(inventory)
 			.where(eq(inventory.bottleSize, bottleSize));
-		return item;
+		if (!item) {
+			throw new Error(
+				`Inventory item with bottle size ${bottleSize} not found`
+			);
+		}
+		return item as Inventory;
 	}
 
 	async createInventory(data: InsertInventory): Promise<Inventory> {
@@ -151,6 +164,9 @@ export class DatabaseStorage implements IStorage {
 		const result = await db.execute(sql`SELECT LAST_INSERT_ID() as id`);
 		const id = (result as any)[0][0].id;
 		const [inv] = await db.select().from(inventory).where(eq(inventory.id, id));
+		if (!inv) {
+			throw new Error("Failed to create inventory item");
+		}
 
 		// Create inventory track record
 		await db.insert(inventoryTrack).values({
@@ -168,42 +184,16 @@ export class DatabaseStorage implements IStorage {
 	async updateInventory(
 		id: number,
 		data: Partial<InsertInventory>
-	): Promise<Inventory | undefined> {
-		// First get the current inventory to get the bottle size
-		const [currentInventory] = await db
-			.select()
-			.from(inventory)
-			.where(eq(inventory.id, id));
-
-		if (!currentInventory) {
-			return undefined;
-		}
-
-		// Calculate the quantity added
-		const quantityAdded = data.totalQuantity
-			? data.totalQuantity - currentInventory.totalQuantity
-			: 0;
-
-		// Update the inventory
+	): Promise<Inventory> {
 		await db.update(inventory).set(data).where(eq(inventory.id, id));
-		const [updatedInventory] = await db
+		const [item] = await db
 			.select()
 			.from(inventory)
 			.where(eq(inventory.id, id));
-
-		if (updatedInventory && quantityAdded > 0) {
-			// Create a new inventory track record with the quantity added
-			await db.insert(inventoryTrack).values({
-				bottleSize: currentInventory.bottleSize,
-				totalQuantity: quantityAdded,
-				inStock: data.inStock ?? currentInventory.inStock,
-				soldQuantity: 0,
-				pricePerUnit: data.pricePerUnit ?? currentInventory.pricePerUnit,
-				entryTime: new Date(),
-			});
+		if (!item) {
+			throw new Error(`Inventory item with id ${id} not found`);
 		}
-
-		return updatedInventory;
+		return item as Inventory;
 	}
 
 	// Order operations
@@ -244,40 +234,36 @@ export class DatabaseStorage implements IStorage {
 
 	async createOrder(data: InsertOrder): Promise<Order> {
 		const orderNumber = await this.generateOrderNumber();
-		await db.execute(sql`
-			INSERT INTO orders (
-				order_number,
-				customer_name,
-				order_date,
-				status,
-				notes,
-				total,
-				entry_time
-			) VALUES (
-				${orderNumber},
-				${data.customerName},
-				${data.orderDate},
-				${data.status || "in_progress"},
-				${data.notes},
-				${data.total},
-				${data.entryTime}
-			)
-		`);
+		const orderData = {
+			...data,
+			orderNumber,
+			entryTime: new Date(),
+		};
+
+		await db.insert(orders).values(orderData);
 		const [order] = await db
 			.select()
 			.from(orders)
 			.where(eq(orders.orderNumber, orderNumber));
+
+		if (!order) {
+			throw new Error("Failed to create order");
+		}
+
 		return order;
 	}
 
-	async updateOrderStatus(orderId: number, status: OrderStatus) {
-		const result = await db
-			.update(orders)
-			.set({ status })
-			.where(eq(orders.id, orderId))
-			.returning();
+	async updateOrderStatus(
+		orderId: number,
+		status: OrderStatus
+	): Promise<Order | undefined> {
+		await db.update(orders).set({ status }).where(eq(orders.id, orderId));
+		const [order] = await db
+			.select()
+			.from(orders)
+			.where(eq(orders.id, orderId));
 		await this.updateDashboardStats();
-		return result[0];
+		return order as Order | undefined;
 	}
 
 	// Order Item operations
@@ -289,14 +275,15 @@ export class DatabaseStorage implements IStorage {
 	}
 
 	async createOrderItem(data: InsertOrderItem): Promise<OrderItem> {
-		await db.insert(orderItems).values(data);
-		const result = await db.execute(sql`SELECT LAST_INSERT_ID() as id`);
-		const id = (result as any)[0][0].id;
+		const result = await db.insert(orderItems).values(data);
 		const [item] = await db
 			.select()
 			.from(orderItems)
-			.where(eq(orderItems.id, id));
-		return item;
+			.where(eq(orderItems.orderId, data.orderId));
+		if (!item) {
+			throw new Error("Failed to create order item");
+		}
+		return item as OrderItem;
 	}
 
 	// Dashboard stats
@@ -316,47 +303,63 @@ export class DatabaseStorage implements IStorage {
 	}
 
 	async updateDashboardStats(): Promise<DashboardStats> {
-		const [totalOrders, pendingOrders, totalSales, inventoryValue] =
-			await Promise.all([
-				db.select({ count: sql<number>`count(*)` }).from(orders),
-				db
-					.select({ count: sql<number>`count(*)` })
-					.from(orders)
-					.where(eq(orders.status, "in_progress")),
-				db
-					.select({ sum: sql<number>`coalesce(sum(total_amount), 0)` })
-					.from(orders),
-				db
-					.select({
-						sum: sql<number>`coalesce(sum(in_stock * price_per_unit), 0)`,
-					})
-					.from(inventory),
-			]);
+		const [
+			totalOrdersResult,
+			pendingOrdersResult,
+			totalSalesResult,
+			inventoryValueResult,
+		] = await Promise.all([
+			db.select({ count: sql<number>`count(*)` }).from(orders),
+			db
+				.select({ count: sql<number>`count(*)` })
+				.from(orders)
+				.where(eq(orders.status, "in_progress")),
+			db.select({ sum: sql<number>`coalesce(sum(total), 0)` }).from(orders),
+			db
+				.select({
+					sum: sql<number>`coalesce(sum(in_stock * price_per_unit), 0)`,
+				})
+				.from(inventory),
+		]);
+
+		if (
+			!totalOrdersResult?.[0] ||
+			!pendingOrdersResult?.[0] ||
+			!totalSalesResult?.[0] ||
+			!inventoryValueResult?.[0]
+		) {
+			throw new Error("Failed to calculate dashboard stats");
+		}
+
+		const totalOrders = totalOrdersResult[0].count;
+		const pendingOrders = pendingOrdersResult[0].count;
+		const totalSales = totalSalesResult[0].sum.toString();
+		const inventoryValue = inventoryValueResult[0].sum.toString();
+
+		const stats = {
+			id: 1,
+			totalOrders,
+			pendingOrders,
+			totalSales,
+			inventoryValue,
+			entryTime: new Date(),
+			updatedAt: new Date(),
+		};
 
 		await db
 			.insert(dashboardStats)
-			.values({
-				id: 1,
-				totalOrders: totalOrders[0].count,
-				pendingOrders: pendingOrders[0].count,
-				totalSales: totalSales[0].sum.toString(),
-				inventoryValue: inventoryValue[0].sum.toString(),
-				entryTime: new Date(),
-				updatedAt: new Date(),
-			})
-			.onConflictDoUpdate({
-				target: dashboardStats.id,
+			.values(stats)
+			.onDuplicateKeyUpdate({
 				set: {
-					totalOrders: totalOrders[0].count,
-					pendingOrders: pendingOrders[0].count,
-					totalSales: totalSales[0].sum.toString(),
-					inventoryValue: inventoryValue[0].sum.toString(),
-					entryTime: new Date(),
+					totalOrders,
+					pendingOrders,
+					totalSales,
+					inventoryValue,
 					updatedAt: new Date(),
 				},
 			});
 
-		return this.getDashboardStats();
+		return stats;
 	}
 
 	// Inventory tracking operations
@@ -380,31 +383,24 @@ export class DatabaseStorage implements IStorage {
 		data: InsertInventoryTrack
 	): Promise<InventoryTrack> {
 		const entryTime = new Date();
-		await db.execute(sql`
-			INSERT INTO inventory_track (
-				bottle_size,
-				total_quantity,
-				in_stock,
-				sold_quantity,
-				price_per_unit,
-				entry_time
-			) VALUES (
-				${data.bottleSize},
-				${data.totalQuantity},
-				${data.inStock},
-				${data.soldQuantity},
-				${data.pricePerUnit},
-				${entryTime}
-			)
-		`);
+		await db.insert(inventoryTrack).values({
+			...data,
+			entryTime,
+		});
 		const [track] = await db
 			.select()
 			.from(inventoryTrack)
 			.where(
-				sql`${inventoryTrack.bottleSize} = ${data.bottleSize} AND ${inventoryTrack.entryTime} = ${entryTime}`
+				and(
+					eq(inventoryTrack.bottleSize, data.bottleSize),
+					eq(inventoryTrack.entryTime, entryTime)
+				)
 			)
 			.orderBy(desc(inventoryTrack.id))
 			.limit(1);
+		if (!track) {
+			throw new Error("Failed to create inventory track");
+		}
 		return track;
 	}
 
@@ -458,6 +454,7 @@ export class DatabaseStorage implements IStorage {
 
 			// Create sample orders
 			const order1 = await this.createOrder({
+				orderNumber: "ORD-001",
 				customerName: "Acme Inc.",
 				orderDate: new Date("2023-08-15"),
 				status: "in_progress",
@@ -485,6 +482,7 @@ export class DatabaseStorage implements IStorage {
 			});
 
 			const order2 = await this.createOrder({
+				orderNumber: "ORD-002",
 				customerName: "TechCore Ltd",
 				orderDate: new Date("2023-08-14"),
 				status: "completed",
@@ -521,6 +519,7 @@ export class DatabaseStorage implements IStorage {
 			});
 
 			const order3 = await this.createOrder({
+				orderNumber: "ORD-003",
 				customerName: "Hydration Plus",
 				orderDate: new Date("2023-08-13"),
 				status: "completed",
@@ -548,6 +547,7 @@ export class DatabaseStorage implements IStorage {
 			});
 
 			const order4 = await this.createOrder({
+				orderNumber: "ORD-004",
 				customerName: "GreenWater Co.",
 				orderDate: new Date("2023-08-12"),
 				status: "in_progress",
@@ -650,43 +650,12 @@ export class DatabaseStorage implements IStorage {
 	}
 
 	async updateOrder(id: number, data: Partial<InsertOrder>): Promise<Order> {
-		const updates = Object.entries(data)
-			.map(([key, value]) => sql.raw(`${key} = ${value}`))
-			.join(", ");
-
-		await db.execute(sql`
-			UPDATE orders
-			SET ${sql.raw(updates)}
-			WHERE id = ${id}
-		`);
+		await db.update(orders).set(data).where(eq(orders.id, id));
 		const [order] = await db.select().from(orders).where(eq(orders.id, id));
+		if (!order) {
+			throw new Error(`Order with id ${id} not found`);
+		}
 		return order;
-	}
-
-	async updateDashboardStats(): Promise<void> {
-		const stats = await this.getDashboardStats();
-		await db.execute(sql`
-			INSERT INTO dashboard_stats (
-				total_orders,
-				pending_orders,
-				total_sales,
-				inventory_value,
-				entry_time,
-				updated_at
-			) VALUES (
-				${stats.totalOrders},
-				${stats.pendingOrders},
-				${stats.totalSales},
-				${stats.inventoryValue},
-				${new Date()},
-				${new Date()}
-			) ON DUPLICATE KEY UPDATE
-				total_orders = VALUES(total_orders),
-				pending_orders = VALUES(pending_orders),
-				total_sales = VALUES(total_sales),
-				inventory_value = VALUES(inventory_value),
-				updated_at = VALUES(updated_at)
-		`);
 	}
 }
 

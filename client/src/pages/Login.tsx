@@ -56,6 +56,8 @@ export default function Login() {
 					"Content-Type": "application/json",
 					Accept: "application/json",
 				},
+				credentials: "include",
+				mode: "cors",
 			});
 
 			console.log("Login response status:", response.status);
@@ -104,6 +106,9 @@ export default function Login() {
 					title: "Login successful",
 					description: `Welcome back, ${responseData.user.name}!`,
 				});
+
+				// Navigate to dashboard
+				navigate("/");
 			} else {
 				console.error("Invalid login response structure:", responseData);
 				throw new Error("Invalid response format from server");

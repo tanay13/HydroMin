@@ -197,6 +197,7 @@ export const insertInventorySchema = createInsertSchema(inventory).pick({
 
 // Order Schema with Drizzle
 export const insertOrderSchema = createInsertSchema(orders).pick({
+	orderNumber: true,
 	customerName: true,
 	orderDate: true,
 	status: true,

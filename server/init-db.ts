@@ -1,160 +1,152 @@
-import { db } from "./db";
-import * as schema from "../shared/schema";
-import { hashPassword } from "./auth";
-import { sql } from "drizzle-orm";
+import { db } from "./db.js";
+import {
+	users,
+	inventory,
+	orders,
+	inventoryTrack,
+	bottleSizes,
+	orderStatuses,
+	insertUserSchema,
+	insertInventorySchema,
+	insertOrderSchema,
+} from "@shared/schema.js";
+import { hashPassword } from "./auth.js";
 
 async function initializeDatabase() {
-	console.log("Database environment variables available:", {
-		DB_HOST: process.env.DB_HOST ? "Set" : "Not Set",
-		DB_PORT: process.env.DB_PORT ? "Set" : "Not Set",
-		DB_USER: process.env.DB_USER ? "Set" : "Not Set",
-		DB_NAME: process.env.DB_NAME ? "Set" : "Not Set",
+	console.log("Environment variables:");
+	console.log({
+		DB_HOST: process.env["DB_HOST"] ? "Set" : "Not Set",
+		DB_PORT: process.env["DB_PORT"] ? "Set" : "Not Set",
+		DB_USER: process.env["DB_USER"] ? "Set" : "Not Set",
+		DB_NAME: process.env["DB_NAME"] ? "Set" : "Not Set",
 	});
 
-	console.log("Using MySQL database storage");
-	console.log("Attempting to connect to MySQL database...");
-
 	try {
-		// Drop existing tables
-		console.log("Dropping existing tables...");
-		await db.execute(sql`SET FOREIGN_KEY_CHECKS = 0`);
-		await db.execute(sql`DROP TABLE IF EXISTS users`);
-		await db.execute(sql`DROP TABLE IF EXISTS inventory`);
-		await db.execute(sql`DROP TABLE IF EXISTS inventory_track`);
-		await db.execute(sql`DROP TABLE IF EXISTS orders`);
-		await db.execute(sql`DROP TABLE IF EXISTS order_items`);
-		await db.execute(sql`DROP TABLE IF EXISTS dashboard_stats`);
-		await db.execute(sql`SET FOREIGN_KEY_CHECKS = 1`);
+		const now = new Date();
 
-		// Create all tables
-		console.log("Creating database tables...");
-		await db.execute(sql`
-			CREATE TABLE users (
-				id INT AUTO_INCREMENT PRIMARY KEY,
-				username VARCHAR(255) NOT NULL UNIQUE,
-				email VARCHAR(255) NOT NULL UNIQUE,
-				password VARCHAR(255) NOT NULL,
-				name VARCHAR(255) NOT NULL,
-				role ENUM('admin', 'manager', 'inventory') NOT NULL,
-				created_by INT,
-				entry_time DATETIME NOT NULL,
-				created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-				updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-				FOREIGN KEY (created_by) REFERENCES users(id)
-			)
-		`);
-
-		await db.execute(sql`
-			CREATE TABLE inventory (
-				id INT AUTO_INCREMENT PRIMARY KEY,
-				bottle_size ENUM('250ML', '500ML', '1L') NOT NULL UNIQUE,
-				total_quantity INT NOT NULL DEFAULT 0,
-				in_stock INT NOT NULL DEFAULT 0,
-				sold_quantity INT NOT NULL DEFAULT 0,
-				price_per_unit DECIMAL(10,2) NOT NULL,
-				entry_time DATETIME NOT NULL,
-				created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-				updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-			)
-		`);
-
-		await db.execute(sql`
-			CREATE TABLE inventory_track (
-				id INT AUTO_INCREMENT PRIMARY KEY,
-				bottle_size ENUM('250ML', '500ML', '1L') NOT NULL,
-				total_quantity INT NOT NULL,
-				in_stock INT NOT NULL,
-				sold_quantity INT NOT NULL DEFAULT 0,
-				price_per_unit DECIMAL(10,2) NOT NULL,
-				entry_time DATETIME NOT NULL,
-				created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-			)
-		`);
-
-		await db.execute(sql`
-			CREATE TABLE orders (
-				id INT AUTO_INCREMENT PRIMARY KEY,
-				order_number VARCHAR(255) NOT NULL UNIQUE,
-				customer_name VARCHAR(255) NOT NULL,
-				order_date DATETIME NOT NULL,
-				status ENUM('pending', 'in_progress', 'completed', 'cancelled') NOT NULL,
-				notes TEXT,
-				total DECIMAL(10,2) NOT NULL,
-				entry_time DATETIME NOT NULL,
-				created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-				updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-			)
-		`);
-
-		await db.execute(sql`
-			CREATE TABLE order_items (
-				id INT AUTO_INCREMENT PRIMARY KEY,
-				order_id INT NOT NULL,
-				bottle_size ENUM('250ML', '500ML', '1L') NOT NULL,
-				quantity INT NOT NULL,
-				price_per_unit DECIMAL(10,2) NOT NULL,
-				subtotal DECIMAL(10,2) NOT NULL,
-				entry_time DATETIME NOT NULL,
-				created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-				updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-				FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
-			)
-		`);
-
-		await db.execute(sql`
-			CREATE TABLE dashboard_stats (
-				id INT AUTO_INCREMENT PRIMARY KEY,
-				total_orders INT NOT NULL DEFAULT 0,
-				pending_orders INT NOT NULL DEFAULT 0,
-				total_sales DECIMAL(10,2) NOT NULL DEFAULT 0,
-				inventory_value DECIMAL(10,2) NOT NULL DEFAULT 0,
-				entry_time DATETIME NOT NULL,
-				created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-				updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-			)
-		`);
-
-		// Create indexes
-		await db.execute(sql`CREATE INDEX idx_orders_date ON orders(order_date)`);
-		await db.execute(
-			sql`CREATE INDEX idx_order_items_order_id ON order_items(order_id)`
-		);
-		await db.execute(
-			sql`CREATE INDEX idx_inventory_track_bottle_size ON inventory_track(bottle_size)`
-		);
-		await db.execute(
-			sql`CREATE INDEX idx_inventory_track_entry_time ON inventory_track(entry_time)`
-		);
-
-		// Create admin user
-		console.log("Creating admin user...");
-		const hashedPassword = await hashPassword("password123");
-		await db.insert(schema.users).values({
+		// Create initial admin user
+		const adminPassword = await hashPassword("admin");
+		const adminUser = insertUserSchema.parse({
 			username: "admin",
 			email: "admin@example.com",
-			password: hashedPassword,
+			password: adminPassword,
 			name: "System Administrator",
 			role: "admin",
-			entryTime: new Date(),
+			entryTime: now,
 		});
+		await db.insert(users).values(adminUser);
 
-		const [adminUser] = await db
-			.select()
-			.from(schema.users)
-			.where(sql`username = 'admin'`);
-		console.log("Admin user created successfully:", adminUser);
+		console.log("Created admin user");
 
-		console.log("Database initialization completed successfully!");
+		// Create initial merchant user
+		const merchantPassword = await hashPassword("merchant");
+		const merchantUser = insertUserSchema.parse({
+			username: "merchant",
+			email: "merchant@example.com",
+			password: merchantPassword,
+			name: "Merchant User",
+			role: "inventory",
+			entryTime: now,
+		});
+		await db.insert(users).values(merchantUser);
+
+		console.log("Created merchant user");
+
+		// Create initial inventory items
+		const inventoryItems = [
+			{
+				bottleSize: bottleSizes[2], // "1L"
+				totalQuantity: 50,
+				inStock: 50,
+				pricePerUnit: "7.0",
+				entryTime: now,
+			},
+			{
+				bottleSize: bottleSizes[1], // "500ML"
+				totalQuantity: 75,
+				inStock: 75,
+				pricePerUnit: "4.0",
+				entryTime: now,
+			},
+			{
+				bottleSize: bottleSizes[0], // "250ML"
+				totalQuantity: 100,
+				inStock: 100,
+				pricePerUnit: "2.5",
+				entryTime: now,
+			},
+		].map((item) => insertInventorySchema.parse(item));
+
+		await db.insert(inventory).values(inventoryItems);
+
+		console.log("Created initial inventory items");
+
+		// Create initial orders
+		const orderItems = [
+			{
+				orderNumber: "ORD-001",
+				customerName: "Test Customer 1",
+				orderDate: now,
+				status: orderStatuses[1], // "completed"
+				total: "35.0",
+				entryTime: now,
+			},
+			{
+				orderNumber: "ORD-002",
+				customerName: "Test Customer 2",
+				orderDate: now,
+				status: orderStatuses[1], // "completed"
+				total: "20.0",
+				entryTime: now,
+			},
+		];
+
+		await db.insert(orders).values(orderItems);
+
+		console.log("Created initial orders");
+
+		// Create initial inventory tracking entries
+		const trackingItems = [
+			{
+				bottleSize: bottleSizes[2], // "1L"
+				totalQuantity: 50,
+				inStock: 45,
+				soldQuantity: 5,
+				pricePerUnit: "7.0",
+				entryTime: now,
+			},
+			{
+				bottleSize: bottleSizes[1], // "500ML"
+				totalQuantity: 75,
+				inStock: 67,
+				soldQuantity: 8,
+				pricePerUnit: "4.0",
+				entryTime: now,
+			},
+			{
+				bottleSize: bottleSizes[0], // "250ML"
+				totalQuantity: 100,
+				inStock: 100,
+				soldQuantity: 0,
+				pricePerUnit: "2.5",
+				entryTime: now,
+			},
+		];
+
+		await db.insert(inventoryTrack).values(trackingItems);
+
+		console.log("Created initial inventory tracking entries");
+
+		console.log("Database initialization completed successfully");
 	} catch (error) {
-		console.error("Error during database initialization:", error);
+		console.error("Error initializing database:", error);
 		throw error;
 	}
 }
 
-// Execute initialization
 initializeDatabase()
 	.then(() => {
-		console.log("Database initialization completed!");
+		console.log("Database initialization completed");
 		process.exit(0);
 	})
 	.catch((error) => {
