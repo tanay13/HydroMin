@@ -76,7 +76,13 @@ export default function InventorySummary({
 											className={`h-2.5 ${
 												isLow ? "bg-warning/20" : "bg-neutral-200"
 											}`}
-											indicatorClassName={isLow ? "bg-warning" : undefined}
+											style={
+												{
+													"--progress-indicator-color": isLow
+														? "var(--warning)"
+														: undefined,
+												} as React.CSSProperties
+											}
 										/>
 										<div className="flex justify-between mt-1 text-xs text-muted-foreground">
 											<span>In Stock: {item.inStock.toLocaleString()}</span>
