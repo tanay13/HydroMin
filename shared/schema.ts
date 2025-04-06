@@ -1,11 +1,11 @@
 import {
-	pgTable,
-	text,
-	serial,
-	integer,
-	numeric,
-	timestamp,
-} from "drizzle-orm/pg-core";
+	mysqlTable,
+	varchar,
+	int,
+	decimal,
+	datetime,
+} from "drizzle-orm/mysql-core";
+import { sql } from "drizzle-orm/sql";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -37,72 +37,112 @@ export const orderStatusSchema = z.enum(orderStatuses);
 export type OrderStatus = z.infer<typeof orderStatusSchema>;
 
 // Database Table Definitions
-export const users = pgTable("users", {
-	id: serial("id").primaryKey(),
-	username: text("username").notNull().unique(),
-	email: text("email").notNull().unique(),
-	password: text("password").notNull(),
-	name: text("name").notNull(),
-	role: text("role").notNull().default("inventory"),
-	createdBy: integer("created_by"),
-	entryTime: timestamp("entry_time").notNull().defaultNow(),
-	createdAt: timestamp("created_at").notNull().defaultNow(),
-	updatedAt: timestamp("updated_at").notNull().defaultNow(),
+export const users = mysqlTable("users", {
+	id: int("id").autoincrement().primaryKey(),
+	username: varchar("username", { length: 255 }).notNull().unique(),
+	email: varchar("email", { length: 255 }).notNull().unique(),
+	password: varchar("password", { length: 255 }).notNull(),
+	name: varchar("name", { length: 255 }).notNull(),
+	role: varchar("role", { length: 50 }).notNull().default("inventory"),
+	createdBy: int("created_by"),
+	entryTime: datetime("entry_time")
+		.notNull()
+		.default(sql`CURRENT_TIMESTAMP`),
+	createdAt: datetime("created_at")
+		.notNull()
+		.default(sql`CURRENT_TIMESTAMP`),
+	updatedAt: datetime("updated_at")
+		.notNull()
+		.default(sql`CURRENT_TIMESTAMP`),
 });
 
-export const inventory = pgTable("inventory", {
-	id: serial("id").primaryKey(),
-	bottleSize: text("bottle_size").notNull(),
-	totalQuantity: integer("total_quantity").notNull(),
-	inStock: integer("in_stock").notNull(),
-	soldQuantity: integer("sold_quantity").notNull().default(0),
-	pricePerUnit: numeric("price_per_unit", {
+export const inventory = mysqlTable("inventory", {
+	id: int("id").autoincrement().primaryKey(),
+	bottleSize: varchar("bottle_size", {
+		length: 10,
+		enum: ["250ML", "500ML", "1L"],
+	}).notNull(),
+	totalQuantity: int("total_quantity").notNull(),
+	inStock: int("in_stock").notNull(),
+	soldQuantity: int("sold_quantity").notNull().default(0),
+	pricePerUnit: decimal("price_per_unit", {
 		precision: 10,
 		scale: 2,
 	}).notNull(),
-	entryTime: timestamp("entry_time").notNull(),
-	createdAt: timestamp("created_at").notNull().defaultNow(),
-	updatedAt: timestamp("updated_at").notNull().defaultNow(),
+	entryTime: datetime("entry_time").notNull(),
+	createdAt: datetime("created_at")
+		.notNull()
+		.default(sql`CURRENT_TIMESTAMP`),
+	updatedAt: datetime("updated_at")
+		.notNull()
+		.default(sql`CURRENT_TIMESTAMP`),
 });
 
-export const orders = pgTable("orders", {
-	id: serial("id").primaryKey(),
-	orderNumber: text("order_number").notNull().unique(),
-	customerName: text("customer_name").notNull(),
-	orderDate: timestamp("order_date").notNull(),
-	status: text("status").notNull().default("in_progress"),
-	notes: text("notes"),
-	total: numeric("total", { precision: 10, scale: 2 }).notNull(),
-	entryTime: timestamp("entry_time").notNull(),
-	createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-export const orderItems = pgTable("order_items", {
-	id: serial("id").primaryKey(),
-	orderId: integer("order_id").notNull(),
-	bottleSize: text("bottle_size").notNull(),
-	quantity: integer("quantity").notNull(),
-	pricePerUnit: numeric("price_per_unit", {
+export const inventoryTrack = mysqlTable("inventory_track", {
+	id: int("id").autoincrement().primaryKey(),
+	bottleSize: varchar("bottle_size", {
+		length: 10,
+		enum: ["250ML", "500ML", "1L"],
+	}).notNull(),
+	totalQuantity: int("total_quantity").notNull(),
+	inStock: int("in_stock").notNull(),
+	soldQuantity: int("sold_quantity").notNull().default(0),
+	pricePerUnit: decimal("price_per_unit", {
 		precision: 10,
 		scale: 2,
 	}).notNull(),
-	subtotal: numeric("subtotal", { precision: 10, scale: 2 }).notNull(),
-	entryTime: timestamp("entry_time").notNull(),
-	createdAt: timestamp("created_at").notNull().defaultNow(),
+	entryTime: datetime("entry_time").notNull(),
+	createdAt: datetime("created_at")
+		.notNull()
+		.default(sql`CURRENT_TIMESTAMP`),
 });
 
-export const dashboardStats = pgTable("dashboard_stats", {
-	id: serial("id").primaryKey(),
-	totalOrders: integer("total_orders").notNull().default(0),
-	pendingOrders: integer("pending_orders").notNull().default(0),
-	totalSales: numeric("total_sales", { precision: 10, scale: 2 })
+export const orders = mysqlTable("orders", {
+	id: int("id").autoincrement().primaryKey(),
+	orderNumber: varchar("order_number", { length: 50 }).notNull().unique(),
+	customerName: varchar("customer_name", { length: 255 }).notNull(),
+	orderDate: datetime("order_date").notNull(),
+	status: varchar("status", { length: 20 }).notNull().default("in_progress"),
+	notes: varchar("notes", { length: 1000 }),
+	total: decimal("total", { precision: 10, scale: 2 }).notNull(),
+	entryTime: datetime("entry_time").notNull(),
+	createdAt: datetime("created_at")
+		.notNull()
+		.default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const orderItems = mysqlTable("order_items", {
+	id: int("id").autoincrement().primaryKey(),
+	orderId: int("order_id").notNull(),
+	bottleSize: varchar("bottle_size", { length: 10 }).notNull(),
+	quantity: int("quantity").notNull(),
+	pricePerUnit: decimal("price_per_unit", {
+		precision: 10,
+		scale: 2,
+	}).notNull(),
+	subtotal: decimal("subtotal", { precision: 10, scale: 2 }).notNull(),
+	entryTime: datetime("entry_time").notNull(),
+	createdAt: datetime("created_at")
+		.notNull()
+		.default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const dashboardStats = mysqlTable("dashboard_stats", {
+	id: int("id").autoincrement().primaryKey(),
+	totalOrders: int("total_orders").notNull().default(0),
+	pendingOrders: int("pending_orders").notNull().default(0),
+	totalSales: decimal("total_sales", { precision: 10, scale: 2 })
 		.notNull()
 		.default("0"),
-	inventoryValue: numeric("inventory_value", { precision: 10, scale: 2 })
+	inventoryValue: decimal("inventory_value", { precision: 10, scale: 2 })
 		.notNull()
 		.default("0"),
-	entryTime: timestamp("entry_time").notNull().defaultNow(),
-	lastUpdated: timestamp("last_updated").notNull().defaultNow(),
+	entryTime: datetime("entry_time")
+		.notNull()
+		.default(sql`CURRENT_TIMESTAMP`),
+	updatedAt: datetime("updated_at")
+		.notNull()
+		.default(sql`CURRENT_TIMESTAMP`),
 });
 
 // Type Definitions
@@ -111,6 +151,8 @@ export type Inventory = typeof inventory.$inferSelect;
 export type Order = typeof orders.$inferSelect;
 export type OrderItem = typeof orderItems.$inferSelect;
 export type DashboardStats = typeof dashboardStats.$inferSelect;
+export type InventoryTrack = typeof inventoryTrack.$inferSelect;
+export type InsertInventoryTrack = typeof inventoryTrack.$inferInsert;
 
 // User Schema with Drizzle
 export const insertUserSchema = createInsertSchema(users).pick({

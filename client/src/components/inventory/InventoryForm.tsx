@@ -55,20 +55,17 @@ export default function InventoryForm({
 			bottleSize: "250ML",
 			quantity: 0,
 			pricePerUnit: bottlePrices["250ML"],
-			entryTime: new Date().toISOString().split("T")[0],
+			entryTime: new Date().toISOString(),
 		},
 	});
 
 	const onSubmit = async (data: InventoryEntry) => {
 		try {
 			setIsSubmitting(true);
-			await apiRequest("/api/inventory", {
-				method: "POST",
-				body: JSON.stringify({
-					...data,
-					totalQuantity: data.quantity,
-					inStock: data.quantity,
-				}),
+			await apiRequest("POST", "/api/inventory", {
+				...data,
+				totalQuantity: data.quantity,
+				inStock: data.quantity,
 			});
 
 			toast({

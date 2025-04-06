@@ -1,0 +1,68 @@
+0:02:00 TextSelectionChanged
+0:02:00 TextSelectionChanged
+0:02:00 TextSelectionChanged
+0:02:00 TextSelectionChanged
+0:02:00 TextSelectionChanged
+0:02:00 TextSelectionChanged
+0:02:01 TextSelectionChanged
+0:02:01 TextSelectionChanged
+0:02:01 TextSelectionChanged
+0:02:01 TextSelectionChanged
+0:02:01 Autofill_OnWillSubmitForm
+0:03:44 Tab2 StartNav14 #typed
+0:03:44 Tab3 StartNav15 #auto_toplevel
+0:03:44 Browser1 Insert active Tab3 at 1
+0:03:44 Tab3 FinishNav15
+0:03:44 Tab3 PageLoad
+0:03:46 CloseTab_NoAlertIndicator
+0:03:46 Browser1 Close Tab2 at 0
+0:03:46 Tab2 FinishNav14
+0:03:48 OmniboxInputInProgress
+0:03:49 LoadURL
+0:03:49 Tab3 StartNav16 #typed
+0:03:49 Widget Closed: RoundedOmniboxResultsFrameWindow
+0:03:49 Tab3 FinishNav16
+0:03:52 Tab3 PageLoad
+0:03:52 Tab3 StartNav17 #renderer-script #link
+0:03:52 Tab3 FinishNav17
+0:03:54 TextSelectionChanged
+0:03:54 Autofill_PolledProfileSuggestions
+0:03:54 Autofill_SelectedSuggestion
+0:03:54 Widget Closed: PopupViewViews
+0:03:55 TextSelectionChanged
+0:03:55 TextSelectionChanged
+0:03:56 TextSelectionChanged
+0:03:56 TextSelectionChanged
+0:03:56 TextSelectionChanged
+0:03:56 TextSelectionChanged
+0:03:56 TextSelectionChanged
+0:03:56 TextSelectionChanged
+0:03:57 TextSelectionChanged
+0:03:57 TextSelectionChanged
+0:03:57 Autofill_OnWillSubmitForm
+0:03:58 TextSelectionChanged
+0:03:59 TextSelectionChanged
+0:03:59 TextSelectionChanged
+0:06:09 Tab3 StartNav18 #renderer-script #link
+0:06:10 Tab3 FinishNav18
+0:06:14 PasswordManager_LoginPassed
+0:06:14 Tab3 PageLoad
+0:06:25 TextSelectionChanged
+0:06:25 TextSelectionChanged
+0:06:25 Autofill_PolledProfileSuggestions
+0:06:27 Autofill_SelectedSuggestion
+0:06:27 Widget Closed: PopupViewViews
+0:06:28 TextSelectionChanged
+0:06:28 Widget Closed: PasswordSaveUpdateView
+0:06:28 TextSelectionChanged
+0:06:28 TextSelectionChanged
+0:06:28 TextSelectionChanged
+0:06:29 TextSelectionChanged
+0:06:29 TextSelectionChanged
+0:06:29 TextSelectionChanged
+0:06:29 TextSelectionChanged
+0:06:30 TextSelectionChanged
+0:06:30 TextSelectionChanged
+0:06:30 TextSelectionChanged
+0:06:30 Autofill_OnWillSubmitForm
+0:07:45 Browser1 Close Tab3 at 0

@@ -1,0 +1,65 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "Debug Server",
+			"skipFiles": ["<node_internals>/**"],
+			"program": "${workspaceFolder}/server/index.ts",
+			"runtimeExecutable": "tsx",
+			"outFiles": ["${workspaceFolder}/dist/**/*.js"],
+			"console": "integratedTerminal",
+			"env": {
+				"NODE_ENV": "development",
+				"PORT": "3000",
+				"DATABASE_URL": "postgresql://postgres:postgres@localhost:5432/water_distribution"
+			},
+			"sourceMaps": true,
+			"resolveSourceMapLocations": [
+				"${workspaceFolder}/**",
+				"!**/node_modules/**"
+			],
+			"windows": {
+				"program": "${workspaceFolder}/server/index.ts",
+				"runtimeExecutable": "tsx"
+			}
+		},
+		{
+			"type": "chrome",
+			"request": "launch",
+			"name": "Debug Client",
+			"url": "http://localhost:5173",
+			"webRoot": "${workspaceFolder}/client",
+			"sourceMapPathOverrides": {
+				"webpack:///src/*": "${webRoot}/src/*"
+			},
+			"sourceMaps": true,
+			"trace": true,
+			"userDataDir": "${workspaceFolder}/.vscode/chrome-debug-profile",
+			"runtimeArgs": ["--remote-debugging-port=9222"]
+		},
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "Debug Database Setup",
+			"skipFiles": ["<node_internals>/**"],
+			"program": "${workspaceFolder}/server/init-db.ts",
+			"runtimeExecutable": "tsx",
+			"outFiles": ["${workspaceFolder}/dist/**/*.js"],
+			"console": "integratedTerminal",
+			"env": {
+				"NODE_ENV": "development",
+				"DATABASE_URL": "postgresql://postgres:postgres@localhost:5432/water_distribution"
+			},
+			"sourceMaps": true
+		}
+	],
+	"compounds": [
+		{
+			"name": "Debug Full Stack",
+			"configurations": ["Debug Server", "Debug Client"],
+			"stopAll": true
+		}
+	]
+}

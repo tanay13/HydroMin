@@ -30,7 +30,7 @@ async function cleanupAll() {
 				pendingOrders: 0,
 				totalSales: "0.00",
 				inventoryValue: "0.00",
-				lastUpdated: new Date(),
+				updatedAt: new Date(),
 			})
 			.where(eq(dashboardStats.id, 1));
 		console.log("dashboard stats reset");

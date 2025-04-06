@@ -20,6 +20,15 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { apiRequest } from "@/lib/queryClient";
+
+// Conversion rate from USD to INR (Indian Rupee)
+const USD_TO_INR = 83.5; // 1 USD = 83.5 INR (approximate conversion rate)
+
+// Function to convert USD to INR
+const convertToRupees = (amountInUSD: number): number => {
+	return amountInUSD * USD_TO_INR;
+};
 
 type ReportType = "inventory" | "sales" | "orders";
 
@@ -68,12 +77,8 @@ export default function Reports() {
 
 	// Define types for our API responses
 	interface InventoryItem {
-		id: number;
 		bottleSize: string;
 		totalQuantity: number;
-		inStock: number;
-		soldQuantity: number;
-		pricePerUnit: string;
 	}
 
 	interface SalesData {
@@ -86,38 +91,58 @@ export default function Reports() {
 		salesByDate: Record<string, number>;
 	}
 
-	type OrdersData = Record<string, Record<string, number>>;
+	interface OrderData {
+		merchant: string;
+		total_quantity: number;
+		total_sales: number;
+	}
+
+	type OrdersData = OrderData[];
 
 	// Update the queries to use selectedDate instead of startDate/endDate
-	const { data: inventory, isLoading: inventoryLoading } = useQuery<
+	const { data: inventory = [], isLoading: inventoryLoading } = useQuery<
 		InventoryItem[]
 	>({
-		queryKey: ["/api/inventory/history", dateParams],
+		queryKey: ["/api/inventory/history", selectedDate],
 		queryFn: async () => {
-			const response = await fetch(`/api/inventory/history${dateParams}`);
+			const dateParams =
+				selectedDate.start && selectedDate.end
+					? `?start=${selectedDate.start.toISOString()}&end=${selectedDate.end.toISOString()}`
+					: "";
+			const response = await apiRequest(
+				"GET",
+				`/api/inventory/history${dateParams}`
+			);
 			const data = await response.json();
 			return Array.isArray(data) ? data : [];
 		},
-		enabled:
-			reportType === "inventory" && !!selectedDate.start && !!selectedDate.end,
+		enabled: !!selectedDate.start && !!selectedDate.end,
 	});
 
 	const { data: sales, isLoading: salesLoading } = useQuery<SalesData>({
 		queryKey: ["/api/sales", dateParams],
-		queryFn: () => fetch(`/api/sales${dateParams}`).then((res) => res.json()),
+		queryFn: async () => {
+			const response = await apiRequest("GET", `/api/sales${dateParams}`);
+			const data = await response.json();
+			return data;
+		},
 		enabled:
 			reportType === "sales" && !!selectedDate.start && !!selectedDate.end,
 	});
 
 	const { data: ordersData, isLoading: ordersLoading } = useQuery<OrdersData>({
 		queryKey: ["/api/orders", dateParams],
-		queryFn: () => fetch(`/api/orders${dateParams}`).then((res) => res.json()),
+		queryFn: async () => {
+			const response = await apiRequest("GET", `/api/orders${dateParams}`);
+			const data = await response.json();
+			return data;
+		},
 		enabled:
 			reportType === "orders" && !!selectedDate.start && !!selectedDate.end,
 	});
 
 	// Transform the orders data to match expected format
-	const orders: OrdersData = ordersData || {};
+	const orders: OrdersData = ordersData || [];
 
 	// Generate report date information
 	const today = new Date();
@@ -241,86 +266,47 @@ export default function Reports() {
 								<TableHeader>
 									<TableRow>
 										<TableHead>Bottle Size</TableHead>
-										<TableHead>Total Quantity</TableHead>
-										<TableHead>In Stock</TableHead>
-										<TableHead>Sold</TableHead>
-										<TableHead>Stock Level %</TableHead>
-										<TableHead className="text-right">Value</TableHead>
+										<TableHead>Total Produced</TableHead>
 									</TableRow>
 								</TableHeader>
 								<TableBody>
 									{inventoryLoading ? (
 										<TableRow>
-											<TableCell colSpan={6} className="text-center py-4">
+											<TableCell colSpan={2} className="text-center">
 												Loading...
 											</TableCell>
 										</TableRow>
-									) : !inventory || inventory.length === 0 ? (
+									) : inventory.length === 0 ? (
 										<TableRow>
-											<TableCell colSpan={6} className="text-center py-4">
-												No inventory data found for the selected period
+											<TableCell colSpan={2} className="text-center">
+												No inventory data found for the selected date range
 											</TableCell>
 										</TableRow>
 									) : (
 										<>
-											{inventory.map((item: InventoryItem) => {
-												const stockPercentage = Math.round(
-													(item.inStock / item.totalQuantity) * 100
-												);
-												const value = Number(item.pricePerUnit) * item.inStock;
-
-												return (
-													<TableRow key={item.id}>
-														<TableCell className="font-medium">
-															{item.bottleSize}
-														</TableCell>
-														<TableCell>
-															{item.totalQuantity.toLocaleString()}
-														</TableCell>
-														<TableCell>
-															{item.inStock.toLocaleString()}
-														</TableCell>
-														<TableCell>
-															{item.soldQuantity.toLocaleString()}
-														</TableCell>
-														<TableCell>
-															<span
-																className={
-																	stockPercentage < 30
-																		? "text-warning font-medium"
-																		: ""
-																}
-															>
-																{stockPercentage}%
-															</span>
-														</TableCell>
-														<TableCell className="text-right">
-															₹
-															{value.toLocaleString(undefined, {
-																minimumFractionDigits: 2,
-																maximumFractionDigits: 2,
-															})}
-														</TableCell>
-													</TableRow>
-												);
-											})}
+											{inventory.map((item: InventoryItem) => (
+												<TableRow key={item.bottleSize}>
+													<TableCell className="font-medium">
+														{item.bottleSize}
+													</TableCell>
+													<TableCell>
+														{(item.totalQuantity || 0).toLocaleString()}
+													</TableCell>
+												</TableRow>
+											))}
 
 											<TableRow>
-												<TableCell colSpan={5} className="font-bold">
-													Total
+												<TableCell className="font-bold">
+													Total Bottles Produced
 												</TableCell>
-												<TableCell className="text-right font-bold">
-													₹
-													{inventory
-														.reduce(
+												<TableCell className="font-bold">
+													{(
+														inventory.reduce(
 															(sum: number, item: InventoryItem) =>
-																sum + Number(item.pricePerUnit) * item.inStock,
+																sum + (item.totalQuantity || 0),
 															0
-														)
-														.toLocaleString(undefined, {
-															minimumFractionDigits: 2,
-															maximumFractionDigits: 2,
-														})}
+														) || 0
+													).toLocaleString()}
 												</TableCell>
 											</TableRow>
 										</>
@@ -386,50 +372,71 @@ export default function Reports() {
 						</TabsContent>
 
 						<TabsContent value="orders" className="mt-0">
-							{orders && Object.keys(orders).length > 0 ? (
-								<div className="space-y-8">
-									{Object.entries(orders).map(([customerName, bottleSizes]) => (
-										<div
-											key={customerName}
-											className="bg-neutral-50 p-4 rounded-md"
-										>
-											<h3 className="text-lg font-semibold mb-3">
-												Customer: {customerName}
-											</h3>
-											<Table>
-												<TableHeader>
-													<TableRow>
-														<TableHead>Bottle Size</TableHead>
-														<TableHead className="text-right">
-															Quantity
-														</TableHead>
-													</TableRow>
-												</TableHeader>
-												<TableBody>
-													{Object.entries(
-														bottleSizes as Record<string, number>
-													).map(([bottleSize, quantity]) => (
-														<TableRow key={bottleSize}>
-															<TableCell className="font-medium">
-																{bottleSize}
-															</TableCell>
-															<TableCell className="text-right">
-																{quantity}
-															</TableCell>
-														</TableRow>
-													))}
-												</TableBody>
-											</Table>
-										</div>
-									))}
-								</div>
+							{orders && orders.length > 0 ? (
+								<Table>
+									<TableHeader>
+										<TableRow>
+											<TableHead>Merchant</TableHead>
+											<TableHead className="text-right">
+												Total Quantity
+											</TableHead>
+											<TableHead className="text-right">
+												Total Sales (₹)
+											</TableHead>
+										</TableRow>
+									</TableHeader>
+									<TableBody>
+										{orders.map((order: OrderData) => (
+											<TableRow key={order.merchant}>
+												<TableCell className="font-medium">
+													{order.merchant}
+												</TableCell>
+												<TableCell className="text-right">
+													{order.total_quantity.toLocaleString()}
+												</TableCell>
+												<TableCell className="text-right">
+													₹
+													{convertToRupees(
+														Number(order.total_sales)
+													).toLocaleString(undefined, {
+														minimumFractionDigits: 2,
+														maximumFractionDigits: 2,
+													})}
+												</TableCell>
+											</TableRow>
+										))}
+										<TableRow>
+											<TableCell className="font-bold">Total</TableCell>
+											<TableCell className="text-right font-bold">
+												{orders
+													.reduce((sum, order) => {
+														const quantity = Number(order.total_quantity);
+														return sum + (isNaN(quantity) ? 0 : quantity);
+													}, 0)
+													.toLocaleString()}
+											</TableCell>
+											<TableCell className="text-right font-bold">
+												₹
+												{convertToRupees(
+													orders.reduce((sum, order) => {
+														const sales = Number(order.total_sales);
+														return sum + (isNaN(sales) ? 0 : sales);
+													}, 0)
+												).toLocaleString(undefined, {
+													minimumFractionDigits: 2,
+													maximumFractionDigits: 2,
+												})}
+											</TableCell>
+										</TableRow>
+									</TableBody>
+								</Table>
 							) : (
 								<div className="text-center p-8">
 									<p className="text-muted-foreground">
 										No order data available for the selected period.
 									</p>
 									<p className="text-sm mt-2">
-										Please select a date range to see bottle orders by customer.
+										Please select a date range to see merchant-wise sales data.
 									</p>
 								</div>
 							)}

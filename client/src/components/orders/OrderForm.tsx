@@ -37,18 +37,23 @@ import { format } from "date-fns";
 
 interface OrderFormProps {
 	onSuccess: () => void;
+	open: boolean;
+	onClose: () => void;
 }
 
-export default function OrderForm({ onSuccess }: OrderFormProps) {
+export default function OrderForm({
+	onSuccess,
+	open,
+	onClose,
+}: OrderFormProps) {
 	const { toast } = useToast();
 	const [isSubmitting, setIsSubmitting] = useState(false);
-	const [showForm, setShowForm] = useState(false);
 
 	const form = useForm<OrderEntry>({
 		resolver: zodResolver(orderEntrySchema),
 		defaultValues: {
 			customerName: "",
-			entryTime: new Date().toISOString().split("T")[0],
+			orderDate: new Date().toISOString(),
 			notes: "",
 			items: [
 				{
@@ -71,7 +76,7 @@ export default function OrderForm({ onSuccess }: OrderFormProps) {
 			});
 
 			onSuccess();
-			setShowForm(false);
+			onClose();
 			form.reset();
 		} catch (error) {
 			toast({
@@ -105,7 +110,7 @@ export default function OrderForm({ onSuccess }: OrderFormProps) {
 	};
 
 	return (
-		<Dialog open={showForm} onOpenChange={setShowForm}>
+		<Dialog open={open} onOpenChange={onClose}>
 			<DialogContent className="max-w-2xl">
 				<DialogHeader>
 					<DialogTitle>Create New Order</DialogTitle>
@@ -129,10 +134,10 @@ export default function OrderForm({ onSuccess }: OrderFormProps) {
 
 						<FormField
 							control={form.control}
-							name="entryTime"
+							name="orderDate"
 							render={({ field }) => (
 								<FormItem>
-									<FormLabel>Entry Time</FormLabel>
+									<FormLabel>Order Date</FormLabel>
 									<FormControl>
 										<Input
 											type="datetime-local"
@@ -266,7 +271,7 @@ export default function OrderForm({ onSuccess }: OrderFormProps) {
 							<Button
 								type="button"
 								variant="outline"
-								onClick={() => setShowForm(false)}
+								onClick={onClose}
 								disabled={isSubmitting}
 							>
 								Cancel

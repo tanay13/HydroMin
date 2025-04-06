@@ -30,6 +30,7 @@ import {
 	generateToken,
 	getCurrentUser,
 } from "./auth";
+import { RowDataPacket } from "mysql2";
 
 export async function registerRoutes(app: Express): Promise<Server> {
 	const apiRouter = express.Router();
@@ -63,64 +64,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
 		async (req: Request, res: Response) => {
 			try {
 				const { start, end } = req.query;
-
-				console.log(`Inventory History API received request with params:`, {
+				console.log("Inventory History API received request with params:", {
 					start,
 					end,
 				});
 
-				if (!start || !end) {
-					console.log("Missing start or end date parameters");
-					return res
-						.status(400)
-						.json({ message: "Start and end dates are required" });
-				}
+				const startDate = start ? new Date(start as string) : undefined;
+				const endDate = end ? new Date(end as string) : undefined;
 
-				const startDate = new Date(start as string);
-				const endDate = new Date(end as string);
+				const inventoryHistory = await storage.getInventoryHistory(
+					startDate,
+					endDate
+				);
+				console.log(
+					"Found",
+					inventoryHistory.length,
+					"inventory track entries"
+				);
 
-				// Format dates for direct inclusion in query
-				const formattedStartDate = startDate.toISOString().split("T")[0];
-				const formattedEndDate = endDate.toISOString().split("T")[0];
+				// Group inventory data by bottle size and calculate totals
+				const groupedData = inventoryHistory.reduce(
+					(acc: Record<string, any>, entry) => {
+						const bottleSize = entry.bottleSize;
 
-				console.log(`Formatted dates for query:`, {
-					formattedStartDate,
-					formattedEndDate,
-				});
+						if (!acc[bottleSize]) {
+							acc[bottleSize] = {
+								bottleSize: bottleSize,
+								totalQuantity: 0,
+							};
+						}
 
-				// Query inventory items based on entryTime
-				const query = `
-        SELECT 
-          i.id,
-          i.bottle_size,
-          i.total_quantity,
-          i.in_stock,
-          i.sold_quantity,
-          i.price_per_unit,
-          i.entry_time
-        FROM inventory i
-        WHERE i.entry_time::date >= '${formattedStartDate}'::date 
-        AND i.entry_time::date <= '${formattedEndDate}'::date
-        ORDER BY i.entry_time DESC
-      `;
+						// Add the totalQuantity to the total for this bottle size
+						acc[bottleSize].totalQuantity += Number(entry.totalQuantity);
 
-				console.log(`Executing query: ${query}`);
+						return acc;
+					},
+					{}
+				);
 
-				const result = await db.execute(query);
+				// Convert grouped data to array and sort by bottle size
+				const result = Object.values(groupedData).sort((a: any, b: any) =>
+					a.bottleSize.localeCompare(b.bottleSize)
+				);
 
-				console.log(`Query returned ${result.rows.length} inventory items`);
-
-				if (result.rows.length === 0) {
-					// No inventory items in this period
-					return res.json([]);
-				}
-
-				return res.json(result.rows);
+				console.log("Grouped inventory data:", result);
+				res.json(result);
 			} catch (error) {
 				console.error("Error fetching inventory history:", error);
-				return res
-					.status(500)
-					.json({ message: "Error fetching inventory history" });
+				res.status(500).json({ message: "Failed to fetch inventory history" });
 			}
 		}
 	);
@@ -165,6 +156,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 							totalQuantity: newTotalQuantity,
 							inStock: newInStock,
 							pricePerUnit: String(validatedData.pricePerUnit),
+							entryTime: new Date(validatedData.entryTime),
 						}
 					);
 
@@ -247,58 +239,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
 						formattedEndDate,
 					});
 
-					// Use direct string interpolation instead of parameter binding
+					// Use MySQL-compatible date comparison
 					const query = `
           SELECT 
-            oi.bottle_size, 
-            SUM(oi.quantity) as total_quantity, 
-            o.customer_name,
-            o.order_date
+            o.customer_name as merchant,
+            SUM(oi.quantity) as total_quantity,
+            SUM(oi.quantity * oi.price_per_unit) as total_sales
           FROM order_items oi
           JOIN orders o ON o.id = oi.order_id
-          WHERE o.order_date::date >= '${formattedStartDate}'::date
-          AND o.order_date::date <= '${formattedEndDate}'::date
-          GROUP BY oi.bottle_size, o.customer_name, o.order_date
-          ORDER BY o.order_date
-        `;
+          WHERE DATE(o.order_date) >= DATE(?)
+            AND DATE(o.order_date) <= DATE(?)
+          GROUP BY o.customer_name
+          ORDER BY total_sales DESC`;
 
-					console.log(`Executing query: ${query}`);
-
-					const result = await db.execute(query);
-
-					console.log(`Query returned ${result.rows.length} order records`);
-
-					// Transform query results to include customer information
-					const orderDetailsByCustomer: Record<string, any> = {};
-
-					result.rows.forEach((row: any) => {
-						const customerName = row.customer_name;
-						const bottleSize = row.bottle_size;
-						const quantity = parseInt(row.total_quantity);
-
-						if (!orderDetailsByCustomer[customerName]) {
-							orderDetailsByCustomer[customerName] = {};
-						}
-
-						orderDetailsByCustomer[customerName][bottleSize] = quantity;
-					});
-
-					return res.json(orderDetailsByCustomer);
+					const [result] = await pool.execute<RowDataPacket[]>(query, [
+						formattedStartDate,
+						formattedEndDate,
+					]);
+					res.json(result);
+				} else {
+					const orders = await storage.getAllOrders();
+					res.json(orders);
 				}
-
-				// If no date range provided, return all orders with items
-				const orders = await storage.getAllOrders();
-				// For each order, get its items as well
-				const ordersWithItems = await Promise.all(
-					orders.map(async (order) => {
-						const items = await storage.getOrderItemsByOrderId(order.id);
-						return {
-							...order,
-							items,
-						};
-					})
-				);
-				res.json(ordersWithItems);
 			} catch (error) {
 				console.error("Error fetching orders:", error);
 				res.status(500).json({ message: "Failed to fetch orders" });
@@ -329,46 +291,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
 	apiRouter.post(
 		"/orders",
 		authenticate,
+		authorize(["admin", "manager"]),
 		async (req: Request, res: Response) => {
 			try {
-				const validatedData = orderEntrySchema.parse(req.body);
+				const orderData = orderEntrySchema.parse(req.body);
 
-				// Calculate total
-				let total = 0;
-				for (const item of validatedData.items) {
-					total += item.quantity * item.pricePerUnit;
-				}
-
-				// Create order
+				// Create the order
 				const order = await storage.createOrder({
-					customerName: validatedData.customerName,
-					orderDate: new Date(validatedData.orderDate),
+					customerName: orderData.customerName,
+					orderDate: new Date(orderData.orderDate),
 					status: "in_progress",
-					notes: validatedData.notes,
-					total: String(total),
-					entryTime: new Date(validatedData.orderDate),
+					notes: orderData.notes,
+					total: String(
+						orderData.items.reduce(
+							(sum, item) => sum + item.quantity * item.pricePerUnit,
+							0
+						)
+					),
+					entryTime: new Date(),
 				});
 
 				// Create order items
-				for (const item of validatedData.items) {
-					const subtotal = item.quantity * item.pricePerUnit;
+				for (const item of orderData.items) {
 					await storage.createOrderItem({
 						orderId: order.id,
 						bottleSize: item.bottleSize,
 						quantity: item.quantity,
 						pricePerUnit: String(item.pricePerUnit),
-						subtotal: String(subtotal),
-						entryTime: new Date(validatedData.orderDate),
+						subtotal: String(item.quantity * item.pricePerUnit),
+						entryTime: new Date(),
 					});
-				}
 
-				// Get full order with items
-				const fullOrder = await storage.getOrderWithItems(order.id);
+					// Update inventory
+					await storage.updateInventoryQuantity(
+						item.bottleSize,
+						item.quantity,
+						"remove"
+					);
+				}
 
 				// Update dashboard stats
 				await storage.updateDashboardStats();
 
-				res.status(201).json(fullOrder);
+				res.status(201).json(order);
 			} catch (error) {
 				if (error instanceof z.ZodError) {
 					const validationError = fromZodError(error);
@@ -381,22 +346,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 		}
 	);
 
-	apiRouter.patch(
-		"/orders/:id/status",
+	apiRouter.put(
+		"/orders/:id",
 		authenticate,
+		authorize(["admin", "manager"]),
 		async (req: Request, res: Response) => {
 			try {
 				const id = parseInt(req.params.id);
-				const { status } = req.body;
+				const data = req.body;
 
-				// Validate status
-				const validatedStatus = orderStatusSchema.parse(status);
-
-				// Update order status
-				const updatedOrder = await storage.updateOrderStatus(
-					id,
-					validatedStatus
-				);
+				const updatedOrder = await storage.updateOrder(id, data);
 
 				if (!updatedOrder) {
 					return res.status(404).json({ message: "Order not found" });
@@ -407,13 +366,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 				res.json(updatedOrder);
 			} catch (error) {
-				if (error instanceof z.ZodError) {
-					const validationError = fromZodError(error);
-					res.status(400).json({ message: validationError.message });
-				} else {
-					console.error("Error updating order status:", error);
-					res.status(500).json({ message: "Failed to update order status" });
-				}
+				console.error("Error updating order:", error);
+				res.status(500).json({ message: "Failed to update order" });
 			}
 		}
 	);
@@ -455,16 +409,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 				// 1. First get orders in date range
 				const ordersQuery = `
           SELECT * FROM orders
-          WHERE order_date::date >= '${formattedStartDate}'::date
-          AND order_date::date <= '${formattedEndDate}'::date
+          WHERE DATE(order_date) >= DATE(?)
+          AND DATE(order_date) <= DATE(?)
         `;
 
 				console.log(`Executing orders query: ${ordersQuery}`);
 
-				const ordersResult = await db.execute(ordersQuery);
-				console.log(`Query returned ${ordersResult.rows.length} orders`);
+				const [ordersResult] = await pool.execute<RowDataPacket[]>(
+					ordersQuery,
+					[formattedStartDate, formattedEndDate]
+				);
+				console.log(`Query returned ${ordersResult.length} orders`);
 
-				filteredOrders = ordersResult.rows.map((row: any) => ({
+				filteredOrders = ordersResult.map((row: any) => ({
 					id: row.id,
 					orderNumber: row.order_number,
 					customerName: row.customer_name,
@@ -492,13 +449,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 					console.log(`Executing order items query: ${itemsQuery}`);
 
-					const itemsResult = await db.execute(itemsQuery);
+					const [itemsResult] = await pool.execute<RowDataPacket[]>(itemsQuery);
 					console.log(
-						`Query returned ${itemsResult.rows.length} bottle sizes with sales`
+						`Query returned ${itemsResult.length} bottle sizes with sales`
 					);
 
 					// Create filtered sales data based on the items sold in this date range
-					filteredSales = itemsResult.rows.map((row: any) => {
+					filteredSales = itemsResult.map((row: any) => {
 						const quantity = parseInt(row.quantity);
 						const pricePerUnit = parseFloat(row.price_per_unit);
 						return {
@@ -558,96 +515,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
 	// Authentication routes
 	apiRouter.post("/auth/login", async (req: Request, res: Response) => {
 		try {
-			const validatedData = loginSchema.parse(req.body);
-
-			// Find user by email
-			const user = await storage.getUserByEmail(validatedData.email);
+			const loginData = loginSchema.parse(req.body);
+			const user = await storage.getUserByEmail(loginData.email);
 
 			if (!user) {
-				return res.status(401).json({ message: "Invalid email or password" });
+				return res.status(401).json({ message: "Invalid credentials" });
 			}
 
-			// Check password using bcrypt
-			const passwordIsValid = await comparePassword(
-				validatedData.password,
+			const isValidPassword = await comparePassword(
+				loginData.password,
 				user.password
 			);
 
-			if (!passwordIsValid) {
-				return res.status(401).json({ message: "Invalid email or password" });
+			if (!isValidPassword) {
+				return res.status(401).json({ message: "Invalid credentials" });
 			}
 
-			// Generate JWT token
 			const token = generateToken(user);
-
-			// Return user data and token (excluding password)
-			const { password, ...userData } = user;
-			res.json({
-				user: userData,
-				token,
-			});
+			res.json({ token, user: { ...user, password: undefined } });
 		} catch (error) {
 			if (error instanceof z.ZodError) {
 				const validationError = fromZodError(error);
 				res.status(400).json({ message: validationError.message });
 			} else {
 				console.error("Error during login:", error);
-				res.status(500).json({ message: "Login failed" });
+				res.status(500).json({ message: "Failed to login" });
 			}
 		}
 	});
 
-	apiRouter.post("/auth/register", async (req: Request, res: Response) => {
-		try {
-			const validatedData = registerSchema.parse(req.body);
+	apiRouter.post(
+		"/auth/register",
+		authenticate,
+		authorize(["admin"]),
+		async (req: Request, res: Response) => {
+			try {
+				const registerData = registerSchema.parse(req.body);
+				const hashedPassword = await hashPassword(registerData.password);
+				const currentUser = await getCurrentUser(req);
+				const createdBy = currentUser ? currentUser.id : null;
 
-			// Check if email already exists
-			const existingUserByEmail = await storage.getUserByEmail(
-				validatedData.email
-			);
-			if (existingUserByEmail) {
-				return res.status(400).json({ message: "Email already in use" });
-			}
+				const user = await storage.createUser({
+					username: registerData.username,
+					email: registerData.email,
+					password: hashedPassword,
+					name: registerData.name,
+					role: "inventory",
+					createdBy,
+					entryTime: new Date(),
+				});
 
-			// Check if username already exists
-			const existingUserByUsername = await storage.getUserByUsername(
-				validatedData.username
-			);
-			if (existingUserByUsername) {
-				return res.status(400).json({ message: "Username already in use" });
-			}
-
-			// Hash the password before storing it
-			const hashedPassword = await hashPassword(validatedData.password);
-
-			// Create user with default role of "inventory"
-			const user = await storage.createUser({
-				username: validatedData.username,
-				email: validatedData.email,
-				password: hashedPassword,
-				name: validatedData.name,
-				role: "inventory",
-			});
-
-			// Generate token
-			const token = generateToken(user);
-
-			// Return user data and token (excluding password)
-			const { password, ...userData } = user;
-			res.status(201).json({
-				user: userData,
-				token,
-			});
-		} catch (error) {
-			if (error instanceof z.ZodError) {
-				const validationError = fromZodError(error);
-				res.status(400).json({ message: validationError.message });
-			} else {
-				console.error("Error during registration:", error);
-				res.status(500).json({ message: "Registration failed" });
+				res.status(201).json({ ...user, password: undefined });
+			} catch (error) {
+				if (error instanceof z.ZodError) {
+					const validationError = fromZodError(error);
+					res.status(400).json({ message: validationError.message });
+				} else {
+					console.error("Error creating user:", error);
+					res.status(500).json({ message: "Failed to create user" });
+				}
 			}
 		}
-	});
+	);
 
 	// User management routes (admin only)
 	apiRouter.get(

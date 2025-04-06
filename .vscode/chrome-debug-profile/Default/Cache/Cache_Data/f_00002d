@@ -1,0 +1,245 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/App.tsx?v=CayxSVGqgh2bYQ0fOZ5hs");import __vite__cjsImport0_react_jsxDevRuntime from "/@fs/C:/Users/tanay/Desktop/WaterDistributionTracker/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=41360fbe"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.__vite_plugin_react_preamble_installed__) {
+    throw new Error("@vitejs/plugin-react can't detect preamble. Something is wrong. See https://github.com/vitejs/vite-plugin-react/pull/11#discussion_r430879201");
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = (type, id) => {
+    RefreshRuntime.register(type, "C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx " + id);
+  };
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+var _s = $RefreshSig$(), _s2 = $RefreshSig$();
+import { Switch, Route, useLocation } from "/@fs/C:/Users/tanay/Desktop/WaterDistributionTracker/node_modules/.vite/deps/wouter.js?v=4f13cd90";
+import Dashboard from "/src/pages/Dashboard.tsx";
+import Orders from "/src/pages/Orders.tsx";
+import Inventory from "/src/pages/Inventory.tsx";
+import Sales from "/src/pages/Sales.tsx";
+import Reports from "/src/pages/Reports.tsx";
+import Login from "/src/pages/Login.tsx";
+import NotFound from "/src/pages/not-found.tsx";
+import Sidebar from "/src/components/layouts/Sidebar.tsx";
+import Header from "/src/components/layouts/Header.tsx";
+import { useIsMobile } from "/src/hooks/use-mobile.tsx";
+import __vite__cjsImport14_react from "/@fs/C:/Users/tanay/Desktop/WaterDistributionTracker/node_modules/.vite/deps/react.js?v=41360fbe"; const useState = __vite__cjsImport14_react["useState"]; const useEffect = __vite__cjsImport14_react["useEffect"];
+import { AuthProvider, useAuth, RequireAuth } from "/src/contexts/AuthContext.tsx";
+function AuthenticatedLayout({ children }) {
+  _s();
+  const isMobile = useIsMobile();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user, logout } = useAuth();
+  return /* @__PURE__ */ jsxDEV("div", { className: "min-h-screen bg-neutral-100 flex flex-col md:flex-row", children: [
+    !isMobile && /* @__PURE__ */ jsxDEV(Sidebar, { user, onLogout: logout }, void 0, false, {
+      fileName: "C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx",
+      lineNumber: 23,
+      columnNumber: 21
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "flex-1 flex flex-col overflow-hidden", children: [
+      /* @__PURE__ */ jsxDEV(
+        Header,
+        {
+          isMobile,
+          sidebarOpen,
+          setSidebarOpen,
+          user,
+          onLogout: logout
+        },
+        void 0,
+        false,
+        {
+          fileName: "C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx",
+          lineNumber: 26,
+          columnNumber: 9
+        },
+        this
+      ),
+      isMobile && sidebarOpen && /* @__PURE__ */ jsxDEV("div", { className: "fixed inset-0 z-40 bg-black bg-opacity-50", onClick: () => setSidebarOpen(false), children: /* @__PURE__ */ jsxDEV("div", { className: "w-64 h-full", onClick: (e) => e.stopPropagation(), children: /* @__PURE__ */ jsxDEV(Sidebar, { isMobile: true, onClose: () => setSidebarOpen(false), user, onLogout: logout }, void 0, false, {
+        fileName: "C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx",
+        lineNumber: 37,
+        columnNumber: 15
+      }, this) }, void 0, false, {
+        fileName: "C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx",
+        lineNumber: 36,
+        columnNumber: 13
+      }, this) }, void 0, false, {
+        fileName: "C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx",
+        lineNumber: 35,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("main", { className: "flex-1 overflow-auto p-6", children }, void 0, false, {
+        fileName: "C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx",
+        lineNumber: 42,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx",
+      lineNumber: 25,
+      columnNumber: 7
+    }, this)
+  ] }, void 0, true, {
+    fileName: "C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx",
+    lineNumber: 22,
+    columnNumber: 5
+  }, this);
+}
+_s(AuthenticatedLayout, "SpLxvj5z+N8wfzQlQ0CQtpYG/r0=", false, function() {
+  return [useIsMobile, useAuth];
+});
+_c = AuthenticatedLayout;
+function AppRoutes() {
+  _s2();
+  const [location] = useLocation();
+  const { isAuthenticated } = useAuth();
+  useEffect(() => {
+    if (isAuthenticated && location === "/login") {
+      window.location.href = "/";
+    }
+  }, [isAuthenticated, location]);
+  return /* @__PURE__ */ jsxDEV(Switch, { children: [
+    /* @__PURE__ */ jsxDEV(Route, { path: "/login", component: Login }, void 0, false, {
+      fileName: "C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx",
+      lineNumber: 63,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV(Route, { path: "/", children: /* @__PURE__ */ jsxDEV(RequireAuth, { children: /* @__PURE__ */ jsxDEV(AuthenticatedLayout, { children: /* @__PURE__ */ jsxDEV(Dashboard, {}, void 0, false, {
+      fileName: "C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx",
+      lineNumber: 68,
+      columnNumber: 13
+    }, this) }, void 0, false, {
+      fileName: "C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx",
+      lineNumber: 67,
+      columnNumber: 11
+    }, this) }, void 0, false, {
+      fileName: "C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx",
+      lineNumber: 66,
+      columnNumber: 9
+    }, this) }, void 0, false, {
+      fileName: "C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx",
+      lineNumber: 65,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV(Route, { path: "/orders", children: /* @__PURE__ */ jsxDEV(RequireAuth, { children: /* @__PURE__ */ jsxDEV(AuthenticatedLayout, { children: /* @__PURE__ */ jsxDEV(Orders, {}, void 0, false, {
+      fileName: "C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx",
+      lineNumber: 76,
+      columnNumber: 13
+    }, this) }, void 0, false, {
+      fileName: "C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx",
+      lineNumber: 75,
+      columnNumber: 11
+    }, this) }, void 0, false, {
+      fileName: "C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx",
+      lineNumber: 74,
+      columnNumber: 9
+    }, this) }, void 0, false, {
+      fileName: "C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx",
+      lineNumber: 73,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV(Route, { path: "/inventory", children: /* @__PURE__ */ jsxDEV(RequireAuth, { children: /* @__PURE__ */ jsxDEV(AuthenticatedLayout, { children: /* @__PURE__ */ jsxDEV(Inventory, {}, void 0, false, {
+      fileName: "C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx",
+      lineNumber: 84,
+      columnNumber: 13
+    }, this) }, void 0, false, {
+      fileName: "C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx",
+      lineNumber: 83,
+      columnNumber: 11
+    }, this) }, void 0, false, {
+      fileName: "C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx",
+      lineNumber: 82,
+      columnNumber: 9
+    }, this) }, void 0, false, {
+      fileName: "C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx",
+      lineNumber: 81,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV(Route, { path: "/sales", children: /* @__PURE__ */ jsxDEV(RequireAuth, { children: /* @__PURE__ */ jsxDEV(AuthenticatedLayout, { children: /* @__PURE__ */ jsxDEV(Sales, {}, void 0, false, {
+      fileName: "C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx",
+      lineNumber: 92,
+      columnNumber: 13
+    }, this) }, void 0, false, {
+      fileName: "C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx",
+      lineNumber: 91,
+      columnNumber: 11
+    }, this) }, void 0, false, {
+      fileName: "C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx",
+      lineNumber: 90,
+      columnNumber: 9
+    }, this) }, void 0, false, {
+      fileName: "C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx",
+      lineNumber: 89,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV(Route, { path: "/reports", children: /* @__PURE__ */ jsxDEV(RequireAuth, { children: /* @__PURE__ */ jsxDEV(AuthenticatedLayout, { children: /* @__PURE__ */ jsxDEV(Reports, {}, void 0, false, {
+      fileName: "C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx",
+      lineNumber: 100,
+      columnNumber: 13
+    }, this) }, void 0, false, {
+      fileName: "C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx",
+      lineNumber: 99,
+      columnNumber: 11
+    }, this) }, void 0, false, {
+      fileName: "C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx",
+      lineNumber: 98,
+      columnNumber: 9
+    }, this) }, void 0, false, {
+      fileName: "C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx",
+      lineNumber: 97,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV(Route, { children: /* @__PURE__ */ jsxDEV(NotFound, {}, void 0, false, {
+      fileName: "C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx",
+      lineNumber: 106,
+      columnNumber: 9
+    }, this) }, void 0, false, {
+      fileName: "C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx",
+      lineNumber: 105,
+      columnNumber: 7
+    }, this)
+  ] }, void 0, true, {
+    fileName: "C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx",
+    lineNumber: 62,
+    columnNumber: 5
+  }, this);
+}
+_s2(AppRoutes, "C5VYWKAntt460dzD//8VWSDwByI=", false, function() {
+  return [useLocation, useAuth];
+});
+_c2 = AppRoutes;
+function App() {
+  return /* @__PURE__ */ jsxDEV(AuthProvider, { children: /* @__PURE__ */ jsxDEV(AppRoutes, {}, void 0, false, {
+    fileName: "C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx",
+    lineNumber: 115,
+    columnNumber: 7
+  }, this) }, void 0, false, {
+    fileName: "C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx",
+    lineNumber: 114,
+    columnNumber: 5
+  }, this);
+}
+_c3 = App;
+export default App;
+var _c, _c2, _c3;
+$RefreshReg$(_c, "AuthenticatedLayout");
+$RefreshReg$(_c2, "AppRoutes");
+$RefreshReg$(_c3, "App");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("C:/Users/tanay/Desktop/WaterDistributionTracker/client/src/App.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,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U0FDRSx1QkFBQyxnQkFDQyxpQ0FBQyxlQUFEO0FBQUE7QUFBQTtBQUFBO0FBQUEsU0FBVSxLQURaO0FBQUE7QUFBQTtBQUFBO0FBQUEsU0FFQTtBQUVKO0FBQUNDLE1BTlFEO0FBUVQsZUFBZUE7QUFBSSxJQUFBUixJQUFBTyxLQUFBRTtBQUFBQyxhQUFBVixJQUFBO0FBQUFVLGFBQUFILEtBQUE7QUFBQUcsYUFBQUQsS0FBQSIsIm5hbWVzIjpbIlJvdXRlIiwidXNlTG9jYXRpb24iLCJEYXNoYm9hcmQiLCJPcmRlcnMiLCJJbnZlbnRvcnkiLCJTYWxlcyIsIlJlcG9ydHMiLCJMb2dpbiIsIk5vdEZvdW5kIiwiU2lkZWJhciIsIkhlYWRlciIsInVzZUlzTW9iaWxlIiwidXNlU3RhdGUiLCJ1c2VFZmZlY3QiLCJBdXRoUHJvdmlkZXIiLCJ1c2VBdXRoIiwiUmVxdWlyZUF1dGgiLCJBdXRoZW50aWNhdGVkTGF5b3V0IiwiY2hpbGRyZW4iLCJfcyIsImlzTW9iaWxlIiwic2lkZWJhck9wZW4iLCJzZXRTaWRlYmFyT3BlbiIsInVzZXIiLCJsb2dvdXQiLCJlIiwic3RvcFByb3BhZ2F0aW9uIiwiX2MiLCJBcHBSb3V0ZXMiLCJfczIiLCJsb2NhdGlvbiIsImlzQXV0aGVudGljYXRlZCIsIndpbmRvdyIsImhyZWYiLCJfYzIiLCJBcHAiLCJfYzMiLCIkUmVmcmVzaFJlZyQiXSwiaWdub3JlTGlzdCI6W10sInNvdXJjZXMiOlsiQXBwLnRzeCJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyBTd2l0Y2gsIFJvdXRlLCB1c2VMb2NhdGlvbiB9IGZyb20gXCJ3b3V0ZXJcIjtcbmltcG9ydCBEYXNoYm9hcmQgZnJvbSBcIkAvcGFnZXMvRGFzaGJvYXJkXCI7XG5pbXBvcnQgT3JkZXJzIGZyb20gXCJAL3BhZ2VzL09yZGVyc1wiO1xuaW1wb3J0IEludmVudG9yeSBmcm9tIFwiQC9wYWdlcy9JbnZlbnRvcnlcIjtcbmltcG9ydCBTYWxlcyBmcm9tIFwiQC9wYWdlcy9TYWxlc1wiO1xuaW1wb3J0IFJlcG9ydHMgZnJvbSBcIkAvcGFnZXMvUmVwb3J0c1wiO1xuaW1wb3J0IExvZ2luIGZyb20gXCJAL3BhZ2VzL0xvZ2luXCI7XG5pbXBvcnQgTm90Rm91bmQgZnJvbSBcIkAvcGFnZXMvbm90LWZvdW5kXCI7XG5pbXBvcnQgU2lkZWJhciBmcm9tIFwiQC9jb21wb25lbnRzL2xheW91dHMvU2lkZWJhclwiO1xuaW1wb3J0IEhlYWRlciBmcm9tIFwiQC9jb21wb25lbnRzL2xheW91dHMvSGVhZGVyXCI7XG5pbXBvcnQgeyB1c2VJc01vYmlsZSB9IGZyb20gXCJAL2hvb2tzL3VzZS1tb2JpbGVcIjtcbmltcG9ydCB7IHVzZVN0YXRlLCB1c2VFZmZlY3QgfSBmcm9tIFwicmVhY3RcIjtcbmltcG9ydCB7IEF1dGhQcm92aWRlciwgdXNlQXV0aCwgUmVxdWlyZUF1dGggfSBmcm9tIFwiQC9jb250ZXh0cy9BdXRoQ29udGV4dFwiO1xuXG4vLyBMYXlvdXQgY29tcG9uZW50IGZvciBhdXRoZW50aWNhdGVkIHBhZ2VzXG5mdW5jdGlvbiBBdXRoZW50aWNhdGVkTGF5b3V0KHsgY2hpbGRyZW4gfTogeyBjaGlsZHJlbjogUmVhY3QuUmVhY3ROb2RlIH0pIHtcbiAgY29uc3QgaXNNb2JpbGUgPSB1c2VJc01vYmlsZSgpO1xuICBjb25zdCBbc2lkZWJhck9wZW4sIHNldFNpZGViYXJPcGVuXSA9IHVzZVN0YXRlKGZhbHNlKTtcbiAgY29uc3QgeyB1c2VyLCBsb2dvdXQgfSA9IHVzZUF1dGgoKTtcblxuICByZXR1cm4gKFxuICAgIDxkaXYgY2xhc3NOYW1lPVwibWluLWgtc2NyZWVuIGJnLW5ldXRyYWwtMTAwIGZsZXggZmxleC1jb2wgbWQ6ZmxleC1yb3dcIj5cbiAgICAgIHshaXNNb2JpbGUgJiYgPFNpZGViYXIgdXNlcj17dXNlcn0gb25Mb2dvdXQ9e2xvZ291dH0gLz59XG4gICAgICBcbiAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleC0xIGZsZXggZmxleC1jb2wgb3ZlcmZsb3ctaGlkZGVuXCI+XG4gICAgICAgIDxIZWFkZXIgXG4gICAgICAgICAgaXNNb2JpbGU9e2lzTW9iaWxlfSBcbiAgICAgICAgICBzaWRlYmFyT3Blbj17c2lkZWJhck9wZW59IFxuICAgICAgICAgIHNldFNpZGViYXJPcGVuPXtzZXRTaWRlYmFyT3Blbn1cbiAgICAgICAgICB1c2VyPXt1c2VyfVxuICAgICAgICAgIG9uTG9nb3V0PXtsb2dvdXR9XG4gICAgICAgIC8+XG4gICAgICAgIFxuICAgICAgICB7aXNNb2JpbGUgJiYgc2lkZWJhck9wZW4gJiYgKFxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZml4ZWQgaW5zZXQtMCB6LTQwIGJnLWJsYWNrIGJnLW9wYWNpdHktNTBcIiBvbkNsaWNrPXsoKSA9PiBzZXRTaWRlYmFyT3BlbihmYWxzZSl9PlxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJ3LTY0IGgtZnVsbFwiIG9uQ2xpY2s9e2UgPT4gZS5zdG9wUHJvcGFnYXRpb24oKX0+XG4gICAgICAgICAgICAgIDxTaWRlYmFyIGlzTW9iaWxlPXt0cnVlfSBvbkNsb3NlPXsoKSA9PiBzZXRTaWRlYmFyT3BlbihmYWxzZSl9IHVzZXI9e3VzZXJ9IG9uTG9nb3V0PXtsb2dvdXR9IC8+XG4gICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgKX1cbiAgICAgICAgXG4gICAgICAgIDxtYWluIGNsYXNzTmFtZT1cImZsZXgtMSBvdmVyZmxvdy1hdXRvIHAtNlwiPlxuICAgICAgICAgIHtjaGlsZHJlbn1cbiAgICAgICAgPC9tYWluPlxuICAgICAgPC9kaXY+XG4gICAgPC9kaXY+XG4gICk7XG59XG5cbmZ1bmN0aW9uIEFwcFJvdXRlcygpIHtcbiAgY29uc3QgW2xvY2F0aW9uXSA9IHVzZUxvY2F0aW9uKCk7XG4gIGNvbnN0IHsgaXNBdXRoZW50aWNhdGVkIH0gPSB1c2VBdXRoKCk7XG4gIFxuICAvLyBSZWRpcmVjdCBmcm9tIGxvZ2luIHRvIGRhc2hib2FyZCBpZiBhbHJlYWR5IGF1dGhlbnRpY2F0ZWRcbiAgdXNlRWZmZWN0KCgpID0+IHtcbiAgICBpZiAoaXNBdXRoZW50aWNhdGVkICYmIGxvY2F0aW9uID09PSBcIi9sb2dpblwiKSB7XG4gICAgICB3aW5kb3cubG9jYXRpb24uaHJlZiA9IFwiL1wiO1xuICAgIH1cbiAgfSwgW2lzQXV0aGVudGljYXRlZCwgbG9jYXRpb25dKTtcblxuICByZXR1cm4gKFxuICAgIDxTd2l0Y2g+XG4gICAgICA8Um91dGUgcGF0aD1cIi9sb2dpblwiIGNvbXBvbmVudD17TG9naW59IC8+XG4gICAgICBcbiAgICAgIDxSb3V0ZSBwYXRoPVwiL1wiPlxuICAgICAgICA8UmVxdWlyZUF1dGg+XG4gICAgICAgICAgPEF1dGhlbnRpY2F0ZWRMYXlvdXQ+XG4gICAgICAgICAgICA8RGFzaGJvYXJkIC8+XG4gICAgICAgICAgPC9BdXRoZW50aWNhdGVkTGF5b3V0PlxuICAgICAgICA8L1JlcXVpcmVBdXRoPlxuICAgICAgPC9Sb3V0ZT5cbiAgICAgIFxuICAgICAgPFJvdXRlIHBhdGg9XCIvb3JkZXJzXCI+XG4gICAgICAgIDxSZXF1aXJlQXV0aD5cbiAgICAgICAgICA8QXV0aGVudGljYXRlZExheW91dD5cbiAgICAgICAgICAgIDxPcmRlcnMgLz5cbiAgICAgICAgICA8L0F1dGhlbnRpY2F0ZWRMYXlvdXQ+XG4gICAgICAgIDwvUmVxdWlyZUF1dGg+XG4gICAgICA8L1JvdXRlPlxuICAgICAgXG4gICAgICA8Um91dGUgcGF0aD1cIi9pbnZlbnRvcnlcIj5cbiAgICAgICAgPFJlcXVpcmVBdXRoPlxuICAgICAgICAgIDxBdXRoZW50aWNhdGVkTGF5b3V0PlxuICAgICAgICAgICAgPEludmVudG9yeSAvPlxuICAgICAgICAgIDwvQXV0aGVudGljYXRlZExheW91dD5cbiAgICAgICAgPC9SZXF1aXJlQXV0aD5cbiAgICAgIDwvUm91dGU+XG4gICAgICBcbiAgICAgIDxSb3V0ZSBwYXRoPVwiL3NhbGVzXCI+XG4gICAgICAgIDxSZXF1aXJlQXV0aD5cbiAgICAgICAgICA8QXV0aGVudGljYXRlZExheW91dD5cbiAgICAgICAgICAgIDxTYWxlcyAvPlxuICAgICAgICAgIDwvQXV0aGVudGljYXRlZExheW91dD5cbiAgICAgICAgPC9SZXF1aXJlQXV0aD5cbiAgICAgIDwvUm91dGU+XG4gICAgICBcbiAgICAgIDxSb3V0ZSBwYXRoPVwiL3JlcG9ydHNcIj5cbiAgICAgICAgPFJlcXVpcmVBdXRoPlxuICAgICAgICAgIDxBdXRoZW50aWNhdGVkTGF5b3V0PlxuICAgICAgICAgICAgPFJlcG9ydHMgLz5cbiAgICAgICAgICA8L0F1dGhlbnRpY2F0ZWRMYXlvdXQ+XG4gICAgICAgIDwvUmVxdWlyZUF1dGg+XG4gICAgICA8L1JvdXRlPlxuICAgICAgXG4gICAgICA8Um91dGU+XG4gICAgICAgIDxOb3RGb3VuZCAvPlxuICAgICAgPC9Sb3V0ZT5cbiAgICA8L1N3aXRjaD5cbiAgKTtcbn1cblxuZnVuY3Rpb24gQXBwKCkge1xuICByZXR1cm4gKFxuICAgIDxBdXRoUHJvdmlkZXI+XG4gICAgICA8QXBwUm91dGVzIC8+XG4gICAgPC9BdXRoUHJvdmlkZXI+XG4gICk7XG59XG5cbmV4cG9ydCBkZWZhdWx0IEFwcDtcbiJdLCJmaWxlIjoiQzovVXNlcnMvdGFuYXkvRGVza3RvcC9XYXRlckRpc3RyaWJ1dGlvblRyYWNrZXIvY2xpZW50L3NyYy9BcHAudHN4In0=
