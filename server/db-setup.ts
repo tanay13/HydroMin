@@ -1,6 +1,6 @@
-import { db } from "./db";
-import * as schema from "@shared/schema";
-import { hashPassword } from "./auth";
+import { db } from "./db.js";
+import * as schema from "@shared/schema.js";
+import { hashPassword } from "./auth.js";
 
 async function setupDatabase() {
 	console.log("Setting up database schema...");

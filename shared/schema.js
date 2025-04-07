@@ -1,135 +1,132 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.inventoryEntrySchema = exports.orderEntrySchema = exports.orderItemEntrySchema = exports.insertOrderItemSchema = exports.insertOrderSchema = exports.insertInventorySchema = exports.createUserSchema = exports.registerSchema = exports.loginSchema = exports.insertUserSchema = exports.dashboardStats = exports.orderItems = exports.orders = exports.inventoryTrack = exports.inventory = exports.users = exports.orderStatusSchema = exports.orderStatuses = exports.bottlePrices = exports.userRoleSchema = exports.userRoles = exports.bottleSizeSchema = exports.bottleSizes = void 0;
-const mysql_core_1 = require("drizzle-orm/mysql-core");
-const sql_1 = require("drizzle-orm/sql");
-const drizzle_zod_1 = require("drizzle-zod");
-const zod_1 = require("zod");
+import { mysqlTable, varchar, int, decimal, datetime, } from "drizzle-orm/mysql-core";
+import { sql } from "drizzle-orm/sql";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
 // Bottle Sizes
-exports.bottleSizes = ["250ML", "500ML", "1L"];
-exports.bottleSizeSchema = zod_1.z.enum(exports.bottleSizes);
+export const bottleSizes = ["250ML", "500ML", "1L"];
+export const bottleSizeSchema = z.enum(bottleSizes);
 // User roles
-exports.userRoles = [
+export const userRoles = [
     "admin",
     "manager",
     "marketing",
     "inventory",
 ];
-exports.userRoleSchema = zod_1.z.enum(exports.userRoles);
+export const userRoleSchema = z.enum(userRoles);
 // Bottle Prices (default prices in rupees)
-exports.bottlePrices = {
+export const bottlePrices = {
     "250ML": 2.5,
     "500ML": 4.0,
     "1L": 7.0,
 };
 // Order Status
-exports.orderStatuses = ["in_progress", "completed"];
-exports.orderStatusSchema = zod_1.z.enum(exports.orderStatuses);
+export const orderStatuses = ["in_progress", "completed"];
+export const orderStatusSchema = z.enum(orderStatuses);
 // Database Table Definitions
-exports.users = (0, mysql_core_1.mysqlTable)("users", {
-    id: (0, mysql_core_1.int)("id").autoincrement().primaryKey(),
-    username: (0, mysql_core_1.varchar)("username", { length: 255 }).notNull().unique(),
-    email: (0, mysql_core_1.varchar)("email", { length: 255 }).notNull().unique(),
-    password: (0, mysql_core_1.varchar)("password", { length: 255 }).notNull(),
-    name: (0, mysql_core_1.varchar)("name", { length: 255 }).notNull(),
-    role: (0, mysql_core_1.varchar)("role", { length: 50 }).notNull().default("inventory"),
-    createdBy: (0, mysql_core_1.int)("created_by"),
-    entryTime: (0, mysql_core_1.datetime)("entry_time")
+export const users = mysqlTable("users", {
+    id: int("id").autoincrement().primaryKey(),
+    username: varchar("username", { length: 255 }).notNull().unique(),
+    email: varchar("email", { length: 255 }).notNull().unique(),
+    password: varchar("password", { length: 255 }).notNull(),
+    name: varchar("name", { length: 255 }).notNull(),
+    role: varchar("role", { length: 50 }).notNull().default("inventory"),
+    createdBy: int("created_by"),
+    entryTime: datetime("entry_time")
         .notNull()
-        .default((0, sql_1.sql) `CURRENT_TIMESTAMP`),
-    createdAt: (0, mysql_core_1.datetime)("created_at")
+        .default(sql `CURRENT_TIMESTAMP`),
+    createdAt: datetime("created_at")
         .notNull()
-        .default((0, sql_1.sql) `CURRENT_TIMESTAMP`),
-    updatedAt: (0, mysql_core_1.datetime)("updated_at")
+        .default(sql `CURRENT_TIMESTAMP`),
+    updatedAt: datetime("updated_at")
         .notNull()
-        .default((0, sql_1.sql) `CURRENT_TIMESTAMP`),
+        .default(sql `CURRENT_TIMESTAMP`),
 });
-exports.inventory = (0, mysql_core_1.mysqlTable)("inventory", {
-    id: (0, mysql_core_1.int)("id").autoincrement().primaryKey(),
-    bottleSize: (0, mysql_core_1.varchar)("bottle_size", {
+export const inventory = mysqlTable("inventory", {
+    id: int("id").autoincrement().primaryKey(),
+    bottleSize: varchar("bottle_size", {
         length: 10,
         enum: ["250ML", "500ML", "1L"],
     }).notNull(),
-    totalQuantity: (0, mysql_core_1.int)("total_quantity").notNull(),
-    inStock: (0, mysql_core_1.int)("in_stock").notNull(),
-    soldQuantity: (0, mysql_core_1.int)("sold_quantity").notNull().default(0),
-    pricePerUnit: (0, mysql_core_1.decimal)("price_per_unit", {
+    totalQuantity: int("total_quantity").notNull(),
+    inStock: int("in_stock").notNull(),
+    soldQuantity: int("sold_quantity").notNull().default(0),
+    pricePerUnit: decimal("price_per_unit", {
         precision: 10,
         scale: 2,
     }).notNull(),
-    entryTime: (0, mysql_core_1.datetime)("entry_time").notNull(),
-    createdAt: (0, mysql_core_1.datetime)("created_at")
+    entryTime: datetime("entry_time").notNull(),
+    createdAt: datetime("created_at")
         .notNull()
-        .default((0, sql_1.sql) `CURRENT_TIMESTAMP`),
-    updatedAt: (0, mysql_core_1.datetime)("updated_at")
+        .default(sql `CURRENT_TIMESTAMP`),
+    updatedAt: datetime("updated_at")
         .notNull()
-        .default((0, sql_1.sql) `CURRENT_TIMESTAMP`),
+        .default(sql `CURRENT_TIMESTAMP`),
 });
-exports.inventoryTrack = (0, mysql_core_1.mysqlTable)("inventory_track", {
-    id: (0, mysql_core_1.int)("id").autoincrement().primaryKey(),
-    bottleSize: (0, mysql_core_1.varchar)("bottle_size", {
+export const inventoryTrack = mysqlTable("inventory_track", {
+    id: int("id").autoincrement().primaryKey(),
+    bottleSize: varchar("bottle_size", {
         length: 10,
         enum: ["250ML", "500ML", "1L"],
     }).notNull(),
-    totalQuantity: (0, mysql_core_1.int)("total_quantity").notNull(),
-    inStock: (0, mysql_core_1.int)("in_stock").notNull(),
-    soldQuantity: (0, mysql_core_1.int)("sold_quantity").notNull().default(0),
-    pricePerUnit: (0, mysql_core_1.decimal)("price_per_unit", {
+    totalQuantity: int("total_quantity").notNull(),
+    inStock: int("in_stock").notNull(),
+    soldQuantity: int("sold_quantity").notNull().default(0),
+    pricePerUnit: decimal("price_per_unit", {
         precision: 10,
         scale: 2,
     }).notNull(),
-    entryTime: (0, mysql_core_1.datetime)("entry_time").notNull(),
-    createdAt: (0, mysql_core_1.datetime)("created_at")
+    entryTime: datetime("entry_time").notNull(),
+    createdAt: datetime("created_at")
         .notNull()
-        .default((0, sql_1.sql) `CURRENT_TIMESTAMP`),
+        .default(sql `CURRENT_TIMESTAMP`),
 });
-exports.orders = (0, mysql_core_1.mysqlTable)("orders", {
-    id: (0, mysql_core_1.int)("id").autoincrement().primaryKey(),
-    orderNumber: (0, mysql_core_1.varchar)("order_number", { length: 50 }).notNull().unique(),
-    customerName: (0, mysql_core_1.varchar)("customer_name", { length: 255 }).notNull(),
-    orderDate: (0, mysql_core_1.datetime)("order_date").notNull(),
-    status: (0, mysql_core_1.varchar)("status", { length: 20 }).notNull().default("in_progress"),
-    notes: (0, mysql_core_1.varchar)("notes", { length: 1000 }),
-    total: (0, mysql_core_1.decimal)("total", { precision: 10, scale: 2 }).notNull(),
-    entryTime: (0, mysql_core_1.datetime)("entry_time").notNull(),
-    createdAt: (0, mysql_core_1.datetime)("created_at")
+export const orders = mysqlTable("orders", {
+    id: int("id").autoincrement().primaryKey(),
+    orderNumber: varchar("order_number", { length: 50 }).notNull().unique(),
+    customerName: varchar("customer_name", { length: 255 }).notNull(),
+    orderDate: datetime("order_date").notNull(),
+    status: varchar("status", { length: 20 }).notNull().default("in_progress"),
+    notes: varchar("notes", { length: 1000 }),
+    total: decimal("total", { precision: 10, scale: 2 }).notNull(),
+    entryTime: datetime("entry_time").notNull(),
+    createdAt: datetime("created_at")
         .notNull()
-        .default((0, sql_1.sql) `CURRENT_TIMESTAMP`),
+        .default(sql `CURRENT_TIMESTAMP`),
 });
-exports.orderItems = (0, mysql_core_1.mysqlTable)("order_items", {
-    id: (0, mysql_core_1.int)("id").autoincrement().primaryKey(),
-    orderId: (0, mysql_core_1.int)("order_id").notNull(),
-    bottleSize: (0, mysql_core_1.varchar)("bottle_size", { length: 10 }).notNull(),
-    quantity: (0, mysql_core_1.int)("quantity").notNull(),
-    pricePerUnit: (0, mysql_core_1.decimal)("price_per_unit", {
+export const orderItems = mysqlTable("order_items", {
+    id: int("id").autoincrement().primaryKey(),
+    orderId: int("order_id").notNull(),
+    bottleSize: varchar("bottle_size", { length: 10 }).notNull(),
+    quantity: int("quantity").notNull(),
+    pricePerUnit: decimal("price_per_unit", {
         precision: 10,
         scale: 2,
     }).notNull(),
-    subtotal: (0, mysql_core_1.decimal)("subtotal", { precision: 10, scale: 2 }).notNull(),
-    entryTime: (0, mysql_core_1.datetime)("entry_time").notNull(),
-    createdAt: (0, mysql_core_1.datetime)("created_at")
+    subtotal: decimal("subtotal", { precision: 10, scale: 2 }).notNull(),
+    entryTime: datetime("entry_time").notNull(),
+    createdAt: datetime("created_at")
         .notNull()
-        .default((0, sql_1.sql) `CURRENT_TIMESTAMP`),
+        .default(sql `CURRENT_TIMESTAMP`),
 });
-exports.dashboardStats = (0, mysql_core_1.mysqlTable)("dashboard_stats", {
-    id: (0, mysql_core_1.int)("id").autoincrement().primaryKey(),
-    totalOrders: (0, mysql_core_1.int)("total_orders").notNull().default(0),
-    pendingOrders: (0, mysql_core_1.int)("pending_orders").notNull().default(0),
-    totalSales: (0, mysql_core_1.decimal)("total_sales", { precision: 10, scale: 2 })
+export const dashboardStats = mysqlTable("dashboard_stats", {
+    id: int("id").autoincrement().primaryKey(),
+    totalOrders: int("total_orders").notNull().default(0),
+    pendingOrders: int("pending_orders").notNull().default(0),
+    totalSales: decimal("total_sales", { precision: 10, scale: 2 })
         .notNull()
         .default("0"),
-    inventoryValue: (0, mysql_core_1.decimal)("inventory_value", { precision: 10, scale: 2 })
+    inventoryValue: decimal("inventory_value", { precision: 10, scale: 2 })
         .notNull()
         .default("0"),
-    entryTime: (0, mysql_core_1.datetime)("entry_time")
+    entryTime: datetime("entry_time")
         .notNull()
-        .default((0, sql_1.sql) `CURRENT_TIMESTAMP`),
-    updatedAt: (0, mysql_core_1.datetime)("updated_at")
+        .default(sql `CURRENT_TIMESTAMP`),
+    updatedAt: datetime("updated_at")
         .notNull()
-        .default((0, sql_1.sql) `CURRENT_TIMESTAMP`),
+        .default(sql `CURRENT_TIMESTAMP`),
 });
 // User Schema with Drizzle
-exports.insertUserSchema = (0, drizzle_zod_1.createInsertSchema)(exports.users).pick({
+export const insertUserSchema = createInsertSchema(users).pick({
     username: true,
     email: true,
     password: true,
@@ -139,25 +136,25 @@ exports.insertUserSchema = (0, drizzle_zod_1.createInsertSchema)(exports.users).
     entryTime: true,
 });
 // Authentication Schemas
-exports.loginSchema = zod_1.z.object({
-    email: zod_1.z.string().email("Please enter a valid email address"),
-    password: zod_1.z.string().min(6, "Password must be at least 6 characters"),
+export const loginSchema = z.object({
+    email: z.string().email("Please enter a valid email address"),
+    password: z.string().min(6, "Password must be at least 6 characters"),
 });
-exports.registerSchema = zod_1.z.object({
-    username: zod_1.z.string().min(3, "Username must be at least 3 characters"),
-    email: zod_1.z.string().email("Please enter a valid email address"),
-    password: zod_1.z.string().min(6, "Password must be at least 6 characters"),
-    name: zod_1.z.string().min(1, "Full name is required"),
+export const registerSchema = z.object({
+    username: z.string().min(3, "Username must be at least 3 characters"),
+    email: z.string().email("Please enter a valid email address"),
+    password: z.string().min(6, "Password must be at least 6 characters"),
+    name: z.string().min(1, "Full name is required"),
 });
-exports.createUserSchema = zod_1.z.object({
-    username: zod_1.z.string().min(3, "Username must be at least 3 characters"),
-    email: zod_1.z.string().email("Please enter a valid email address"),
-    password: zod_1.z.string().min(6, "Password must be at least 6 characters"),
-    name: zod_1.z.string().min(1, "Full name is required"),
-    role: exports.userRoleSchema,
+export const createUserSchema = z.object({
+    username: z.string().min(3, "Username must be at least 3 characters"),
+    email: z.string().email("Please enter a valid email address"),
+    password: z.string().min(6, "Password must be at least 6 characters"),
+    name: z.string().min(1, "Full name is required"),
+    role: userRoleSchema,
 });
 // Inventory Schema with Drizzle
-exports.insertInventorySchema = (0, drizzle_zod_1.createInsertSchema)(exports.inventory).pick({
+export const insertInventorySchema = createInsertSchema(inventory).pick({
     bottleSize: true,
     totalQuantity: true,
     inStock: true,
@@ -165,7 +162,8 @@ exports.insertInventorySchema = (0, drizzle_zod_1.createInsertSchema)(exports.in
     entryTime: true,
 });
 // Order Schema with Drizzle
-exports.insertOrderSchema = (0, drizzle_zod_1.createInsertSchema)(exports.orders).pick({
+export const insertOrderSchema = createInsertSchema(orders).pick({
+    orderNumber: true,
     customerName: true,
     orderDate: true,
     status: true,
@@ -174,7 +172,7 @@ exports.insertOrderSchema = (0, drizzle_zod_1.createInsertSchema)(exports.orders
     entryTime: true,
 });
 // Order Item Schema with Drizzle
-exports.insertOrderItemSchema = (0, drizzle_zod_1.createInsertSchema)(exports.orderItems).pick({
+export const insertOrderItemSchema = createInsertSchema(orderItems).pick({
     orderId: true,
     bottleSize: true,
     quantity: true,
@@ -183,21 +181,21 @@ exports.insertOrderItemSchema = (0, drizzle_zod_1.createInsertSchema)(exports.or
     entryTime: true,
 });
 // Order Entry Schema (for frontend form validation)
-exports.orderItemEntrySchema = zod_1.z.object({
-    bottleSize: exports.bottleSizeSchema,
-    quantity: zod_1.z.number().int().positive(),
-    pricePerUnit: zod_1.z.number().positive(),
+export const orderItemEntrySchema = z.object({
+    bottleSize: bottleSizeSchema,
+    quantity: z.number().int().positive(),
+    pricePerUnit: z.number().positive(),
 });
-exports.orderEntrySchema = zod_1.z.object({
-    customerName: zod_1.z.string().min(1, "Customer name is required"),
-    orderDate: zod_1.z.string().or(zod_1.z.date()),
-    notes: zod_1.z.string().optional(),
-    items: zod_1.z.array(exports.orderItemEntrySchema).min(1, "At least one item is required"),
+export const orderEntrySchema = z.object({
+    customerName: z.string().min(1, "Customer name is required"),
+    orderDate: z.string().or(z.date()),
+    notes: z.string().optional(),
+    items: z.array(orderItemEntrySchema).min(1, "At least one item is required"),
 });
 // Inventory Entry Schema (for frontend form validation)
-exports.inventoryEntrySchema = zod_1.z.object({
-    bottleSize: exports.bottleSizeSchema,
-    quantity: zod_1.z.number().int().positive(),
-    pricePerUnit: zod_1.z.number().positive(),
-    entryTime: zod_1.z.string().or(zod_1.z.date()),
+export const inventoryEntrySchema = z.object({
+    bottleSize: bottleSizeSchema,
+    quantity: z.number().int().positive(),
+    pricePerUnit: z.number().positive(),
+    entryTime: z.string().or(z.date()),
 });

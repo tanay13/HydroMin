@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlusIcon } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
+import { OrderWithItems } from "@shared/schema";
 
 export default function Orders() {
 	const [activeTab, setActiveTab] = useState("all");
@@ -15,7 +16,7 @@ export default function Orders() {
 		data: orders,
 		isLoading,
 		refetch,
-	} = useQuery({
+	} = useQuery<OrderWithItems[]>({
 		queryKey: ["/api/orders"],
 		refetchOnMount: true,
 	});

@@ -21,10 +21,10 @@ import {
 	inventoryTrack,
 	type InventoryTrack,
 	type InsertInventoryTrack,
-} from "../shared/schema";
-import { db } from "./db";
+} from "../shared/schema.js";
+import { db } from "./db.js";
 import { eq, desc, count, sum, sql, and, gte, lte } from "drizzle-orm";
-import { setupDatabase } from "./db-setup";
+import { setupDatabase } from "./db-setup.js";
 
 // Interface for storage operations
 interface IStorage {

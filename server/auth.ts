@@ -1,10 +1,10 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { type Request, type Response, type NextFunction } from "express";
-import { storage } from "./storage";
-import { User, UserRole } from "@shared/schema";
+import { storage } from "./storage.js";
+import { type User, type UserRole } from "../shared/schema.js";
 import { db } from "./db.js";
-import { users } from "@shared/schema.js";
+import { users } from "../shared/schema.js";
 import { eq } from "drizzle-orm";
 
 // Secret key for JWT - load from environment variable
@@ -87,15 +87,21 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
 
 // Middleware to check user role
 export function authorize(allowedRoles: UserRole[]) {
-	return (req: Request, res: Response, next: NextFunction) => {
+	return function middleware(
+		req: Request,
+		res: Response,
+		next: NextFunction
+	): void {
 		if (!(req as any).user) {
-			return res.status(401).json({ message: "Authentication required" });
+			res.status(401).json({ message: "Authentication required" });
+			return;
 		}
 
 		const userRole = (req as any).user.role;
 
 		if (!allowedRoles.includes(userRole as UserRole)) {
-			return res.status(403).json({ message: "Insufficient permissions" });
+			res.status(403).json({ message: "Insufficient permissions" });
+			return;
 		}
 
 		next();
@@ -117,13 +123,19 @@ export async function getUserById(id: number) {
 
 // Helper function to check user role
 export function requireRole(role: string) {
-	return (req: Request, res: Response, next: NextFunction) => {
+	return function middleware(
+		req: Request,
+		res: Response,
+		next: NextFunction
+	): void {
 		if (!(req as any).user) {
-			return res.status(401).json({ message: "Authentication required" });
+			res.status(401).json({ message: "Authentication required" });
+			return;
 		}
 
 		if ((req as any).user.role !== role) {
-			return res.status(403).json({ message: "Insufficient permissions" });
+			res.status(403).json({ message: "Insufficient permissions" });
+			return;
 		}
 
 		next();

@@ -1,68 +1,37 @@
-0:02:00 TextSelectionChanged
-0:02:00 TextSelectionChanged
-0:02:00 TextSelectionChanged
-0:02:00 TextSelectionChanged
-0:02:00 TextSelectionChanged
-0:02:00 TextSelectionChanged
-0:02:01 TextSelectionChanged
-0:02:01 TextSelectionChanged
-0:02:01 TextSelectionChanged
-0:02:01 TextSelectionChanged
-0:02:01 Autofill_OnWillSubmitForm
-0:03:44 Tab2 StartNav14 #typed
-0:03:44 Tab3 StartNav15 #auto_toplevel
-0:03:44 Browser1 Insert active Tab3 at 1
-0:03:44 Tab3 FinishNav15
-0:03:44 Tab3 PageLoad
-0:03:46 CloseTab_NoAlertIndicator
-0:03:46 Browser1 Close Tab2 at 0
-0:03:46 Tab2 FinishNav14
-0:03:48 OmniboxInputInProgress
-0:03:49 LoadURL
-0:03:49 Tab3 StartNav16 #typed
-0:03:49 Widget Closed: RoundedOmniboxResultsFrameWindow
-0:03:49 Tab3 FinishNav16
-0:03:52 Tab3 PageLoad
-0:03:52 Tab3 StartNav17 #renderer-script #link
-0:03:52 Tab3 FinishNav17
-0:03:54 TextSelectionChanged
-0:03:54 Autofill_PolledProfileSuggestions
-0:03:54 Autofill_SelectedSuggestion
-0:03:54 Widget Closed: PopupViewViews
-0:03:55 TextSelectionChanged
-0:03:55 TextSelectionChanged
-0:03:56 TextSelectionChanged
-0:03:56 TextSelectionChanged
-0:03:56 TextSelectionChanged
-0:03:56 TextSelectionChanged
-0:03:56 TextSelectionChanged
-0:03:56 TextSelectionChanged
-0:03:57 TextSelectionChanged
-0:03:57 TextSelectionChanged
-0:03:57 Autofill_OnWillSubmitForm
-0:03:58 TextSelectionChanged
-0:03:59 TextSelectionChanged
-0:03:59 TextSelectionChanged
-0:06:09 Tab3 StartNav18 #renderer-script #link
-0:06:10 Tab3 FinishNav18
-0:06:14 PasswordManager_LoginPassed
-0:06:14 Tab3 PageLoad
-0:06:25 TextSelectionChanged
-0:06:25 TextSelectionChanged
-0:06:25 Autofill_PolledProfileSuggestions
-0:06:27 Autofill_SelectedSuggestion
-0:06:27 Widget Closed: PopupViewViews
-0:06:28 TextSelectionChanged
-0:06:28 Widget Closed: PasswordSaveUpdateView
-0:06:28 TextSelectionChanged
-0:06:28 TextSelectionChanged
-0:06:28 TextSelectionChanged
-0:06:29 TextSelectionChanged
-0:06:29 TextSelectionChanged
-0:06:29 TextSelectionChanged
-0:06:29 TextSelectionChanged
-0:06:30 TextSelectionChanged
-0:06:30 TextSelectionChanged
-0:06:30 TextSelectionChanged
-0:06:30 Autofill_OnWillSubmitForm
-0:07:45 Browser1 Close Tab3 at 0
+0:00:00 Startup
+0:00:00 UserEducation.Session.ActivePeriodStart
+0:00:00 Tab1 StartNav1 #auto_toplevel
+0:00:00 Browser1 Insert active Tab1 at 0
+0:00:00 TouchMode.EnteredNonTouchMode
+0:00:00 Tab1 FinishNav1
+0:00:00 Tab1 PageLoad
+0:00:00 Tab1 StartNav2 #typed
+0:00:03 Tab1 FinishNav2 ERR_CONNECTION_REFUSED
+0:00:03 Tab1 PageLoad
+0:00:04 Tab1 StartNav3 #typed
+0:00:06 Tab1 FinishNav3 ERR_ABORTED
+0:00:07 OmniboxInputInProgress
+0:00:11 Tab1 StartNav4 #typed
+0:00:13 LoadURL
+0:00:13 Tab1 FinishNav4 ERR_ABORTED
+0:00:13 Tab1 StartNav5 #typed
+0:00:13 Widget Closed: RoundedOmniboxResultsFrameWindow
+0:00:13 Tab1 FinishNav5 ERR_CONNECTION_REFUSED
+0:00:13 Tab1 PageLoad
+0:00:14 Tab1 StartNav6 #typed
+0:00:15 Tab1 FinishNav6 ERR_ABORTED
+0:00:19 LoadURL
+0:00:19 Tab1 StartNav7 #typed
+0:00:21 Tab1 FinishNav7 ERR_CONNECTION_REFUSED
+0:00:21 Tab1 PageLoad
+0:00:22 Tab1 StartNav8 #typed
+0:00:24 Tab1 FinishNav8 ERR_ABORTED
+0:00:29 Tab1 StartNav9 #typed
+0:00:32 Tab1 FinishNav9 ERR_ABORTED
+0:01:02 Tab1 StartNav10 #typed
+0:01:04 Tab1 FinishNav10 ERR_ABORTED
+0:02:04 Tab1 StartNav11 #typed
+0:02:06 Tab1 FinishNav11 ERR_ABORTED
+0:07:06 Tab1 StartNav12 #typed
+0:07:09 Tab1 FinishNav12 ERR_ABORTED
+0:09:55 Tab1 RenderProcessGone

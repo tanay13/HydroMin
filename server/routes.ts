@@ -5,8 +5,8 @@ import express, {
 	NextFunction,
 } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
-import { db, pool } from "./db";
+import { storage } from "./storage.js";
+import { db, pool } from "./db.js";
 import {
 	bottleSizeSchema,
 	orderStatusSchema,
@@ -19,7 +19,8 @@ import {
 	loginSchema,
 	registerSchema,
 	createUserSchema,
-} from "@shared/schema";
+	type User,
+} from "../shared/schema.js";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import {
@@ -29,8 +30,21 @@ import {
 	comparePassword,
 	generateToken,
 	getCurrentUser,
-} from "./auth";
-import { RowDataPacket } from "mysql2";
+} from "./auth.js";
+import { type RowDataPacket } from "mysql2";
+
+// Add type for inventory entry
+interface InventoryEntry {
+	bottleSize: string;
+	totalQuantity: number;
+}
+
+// Add type for order item
+interface OrderItem {
+	quantity: number;
+	pricePerUnit: number;
+	bottleSize: string;
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
 	const apiRouter = express.Router();
@@ -194,9 +208,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 		"/inventory/:id",
 		authenticate,
 		authorize(["admin", "inventory", "manager"]),
-		async (req: Request, res: Response) => {
+		async (req: Request, res: Response): Promise<Response> => {
 			try {
-				const id = parseInt(req.params.id);
+				const id = parseInt(req.params.id ?? "");
+				if (isNaN(id)) {
+					return res.status(400).json({ message: "Invalid ID format" });
+				}
 				const data = req.body;
 
 				const updatedInventory = await storage.updateInventory(id, data);
@@ -205,13 +222,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 					return res.status(404).json({ message: "Inventory not found" });
 				}
 
-				res.json(updatedInventory);
-
 				// Update dashboard stats
 				await storage.updateDashboardStats();
+				return res.json(updatedInventory);
 			} catch (error) {
 				console.error("Error updating inventory:", error);
-				res.status(500).json({ message: "Failed to update inventory" });
+				return res.status(500).json({ message: "Failed to update inventory" });
 			}
 		}
 	);
@@ -271,19 +287,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 	apiRouter.get(
 		"/orders/:id",
 		authenticate,
-		async (req: Request, res: Response) => {
+		async (req: Request, res: Response): Promise<Response> => {
 			try {
-				const id = parseInt(req.params.id);
+				const id = parseInt(req.params.id ?? "");
+				if (isNaN(id)) {
+					return res.status(400).json({ message: "Invalid ID format" });
+				}
 				const order = await storage.getOrderWithItems(id);
 
 				if (!order) {
 					return res.status(404).json({ message: "Order not found" });
 				}
 
-				res.json(order);
+				return res.json(order);
 			} catch (error) {
 				console.error("Error fetching order:", error);
-				res.status(500).json({ message: "Failed to fetch order" });
+				return res.status(500).json({ message: "Failed to fetch order" });
 			}
 		}
 	);
@@ -298,6 +317,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 				// Create the order
 				const order = await storage.createOrder({
+					orderNumber: generateOrderNumber(),
 					customerName: orderData.customerName,
 					orderDate: new Date(orderData.orderDate),
 					status: "in_progress",
@@ -350,9 +370,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 		"/orders/:id",
 		authenticate,
 		authorize(["admin", "manager"]),
-		async (req: Request, res: Response) => {
+		async (req: Request, res: Response): Promise<Response> => {
 			try {
-				const id = parseInt(req.params.id);
+				const id = parseInt(req.params.id ?? "");
+				if (isNaN(id)) {
+					return res.status(400).json({ message: "Invalid ID format" });
+				}
 				const data = req.body;
 
 				const updatedOrder = await storage.updateOrder(id, data);
@@ -363,11 +386,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 				// Update dashboard stats
 				await storage.updateDashboardStats();
-
-				res.json(updatedOrder);
+				return res.json(updatedOrder);
 			} catch (error) {
 				console.error("Error updating order:", error);
-				res.status(500).json({ message: "Failed to update order" });
+				return res.status(500).json({ message: "Failed to update order" });
 			}
 		}
 	);
@@ -494,7 +516,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 			const salesByDate = completedOrders.reduce(
 				(acc: Record<string, number>, order: any) => {
 					const date = new Date(order.orderDate).toISOString().split("T")[0];
-					acc[date] = (acc[date] || 0) + Number(order.total);
+					if (date) {
+						acc[date] = (acc[date] || 0) + Number(order.total);
+					}
 					return acc;
 				},
 				{} as Record<string, number>
@@ -513,62 +537,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 	// Mount API router
 	// Authentication routes
-	apiRouter.post("/auth/login", async (req: Request, res: Response) => {
-		try {
-			const loginData = loginSchema.parse(req.body);
-			const user = await storage.getUserByEmail(loginData.email);
+	apiRouter.post(
+		"/auth/login",
+		async (req: Request, res: Response): Promise<Response> => {
+			try {
+				const loginData = loginSchema.parse(req.body);
+				const user = await storage.getUserByEmail(loginData.email);
 
-			if (!user) {
-				return res.status(401).json({ message: "Invalid credentials" });
-			}
+				if (!user) {
+					return res.status(401).json({ message: "Invalid credentials" });
+				}
 
-			const isValidPassword = await comparePassword(
-				loginData.password,
-				user.password
-			);
+				const isValidPassword = await comparePassword(
+					loginData.password,
+					user.password
+				);
 
-			if (!isValidPassword) {
-				return res.status(401).json({ message: "Invalid credentials" });
-			}
+				if (!isValidPassword) {
+					return res.status(401).json({ message: "Invalid credentials" });
+				}
 
-			// Generate token with user data
-			const token = await generateToken(user);
+				// Generate token with user data
+				const token = await generateToken(user);
 
-			// Set CORS headers
-			res.setHeader("Access-Control-Allow-Origin", "*");
-			res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
-			res.setHeader(
-				"Access-Control-Allow-Headers",
-				"Content-Type, Authorization"
-			);
-
-			// Send response with user data (excluding password)
-			res.json({
-				token,
-				user: {
-					id: user.id,
-					username: user.username,
-					email: user.email,
-					name: user.name,
-					role: user.role,
-				},
-			});
-		} catch (error) {
-			if (error instanceof z.ZodError) {
-				const validationError = fromZodError(error);
-				res.status(400).json({ message: validationError.message });
-			} else {
-				console.error("Error during login:", error);
-				res.status(500).json({ message: "Failed to login" });
+				// Send response with user data (excluding password)
+				return res.json({
+					token,
+					user: {
+						id: user.id,
+						username: user.username,
+						email: user.email,
+						name: user.name,
+						role: user.role,
+					},
+				});
+			} catch (error) {
+				console.error("Login error:", error);
+				return res.status(500).json({ message: "Login failed" });
 			}
 		}
-	});
+	);
 
 	apiRouter.post(
 		"/auth/register",
 		authenticate,
 		authorize(["admin"]),
-		async (req: Request, res: Response) => {
+		async (req: Request, res: Response): Promise<Response> => {
 			try {
 				const registerData = registerSchema.parse(req.body);
 				const hashedPassword = await hashPassword(registerData.password);
@@ -585,14 +599,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 					entryTime: new Date(),
 				});
 
-				res.status(201).json({ ...user, password: undefined });
+				return res.status(201).json({ ...user, password: undefined });
 			} catch (error) {
 				if (error instanceof z.ZodError) {
 					const validationError = fromZodError(error);
-					res.status(400).json({ message: validationError.message });
+					return res.status(400).json({ message: validationError.message });
 				} else {
 					console.error("Error creating user:", error);
-					res.status(500).json({ message: "Failed to create user" });
+					return res.status(500).json({ message: "Failed to create user" });
 				}
 			}
 		}
@@ -620,7 +634,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 		"/users",
 		authenticate,
 		authorize(["admin"]),
-		async (req: Request, res: Response) => {
+		async (req: Request, res: Response): Promise<Response> => {
 			try {
 				const validatedData = createUserSchema.parse(req.body);
 
@@ -662,14 +676,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 				// Return user data (excluding password)
 				const { password, ...userData } = user;
-				res.status(201).json(userData);
+				return res.status(201).json(userData);
 			} catch (error) {
 				if (error instanceof z.ZodError) {
 					const validationError = fromZodError(error);
-					res.status(400).json({ message: validationError.message });
+					return res.status(400).json({ message: validationError.message });
 				} else {
 					console.error("Error creating user:", error);
-					res.status(500).json({ message: "Failed to create user" });
+					return res.status(500).json({ message: "Failed to create user" });
 				}
 			}
 		}
@@ -679,9 +693,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 		"/users/:id",
 		authenticate,
 		authorize(["admin"]),
-		async (req: Request, res: Response) => {
+		async (req: Request, res: Response): Promise<Response> => {
 			try {
-				const id = parseInt(req.params.id);
+				const id = parseInt(req.params.id ?? "");
+				if (isNaN(id)) {
+					return res.status(400).json({ message: "Invalid ID format" });
+				}
 				const user = await storage.getUser(id);
 
 				if (!user) {
@@ -690,10 +707,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 				// Remove sensitive information before sending
 				const { password, ...userData } = user;
-				res.json(userData);
+				return res.json(userData);
 			} catch (error) {
 				console.error("Error fetching user:", error);
-				res.status(500).json({ message: "Failed to fetch user" });
+				return res.status(500).json({ message: "Failed to fetch user" });
 			}
 		}
 	);
@@ -702,9 +719,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 		"/users/:id",
 		authenticate,
 		authorize(["admin"]),
-		async (req: Request, res: Response) => {
+		async (req: Request, res: Response): Promise<Response> => {
 			try {
-				const id = parseInt(req.params.id);
+				const id = parseInt(req.params.id ?? "");
+				if (isNaN(id)) {
+					return res.status(400).json({ message: "Invalid ID format" });
+				}
 				const data = req.body;
 
 				// Check if user exists
@@ -755,10 +775,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 				// Remove sensitive information before sending
 				const { password, ...userData } = updatedUser;
-				res.json(userData);
+				return res.json(userData);
 			} catch (error) {
 				console.error("Error updating user:", error);
-				res.status(500).json({ message: "Failed to update user" });
+				return res.status(500).json({ message: "Failed to update user" });
 			}
 		}
 	);
@@ -767,9 +787,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 		"/users/:id",
 		authenticate,
 		authorize(["admin"]),
-		async (req: Request, res: Response) => {
+		async (req: Request, res: Response): Promise<Response> => {
 			try {
-				const id = parseInt(req.params.id);
+				const id = parseInt(req.params.id ?? "");
+				if (isNaN(id)) {
+					return res.status(400).json({ message: "Invalid ID format" });
+				}
 
 				// Check if user exists
 				const existingUser = await storage.getUser(id);
@@ -798,10 +821,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 					return res.status(500).json({ message: "Failed to delete user" });
 				}
 
-				res.json({ message: "User deleted successfully" });
+				return res.json({ message: "User deleted successfully" });
 			} catch (error) {
 				console.error("Error deleting user:", error);
-				res.status(500).json({ message: "Failed to delete user" });
+				return res.status(500).json({ message: "Failed to delete user" });
 			}
 		}
 	);
@@ -810,7 +833,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 	apiRouter.get(
 		"/auth/me",
 		authenticate,
-		async (req: Request, res: Response) => {
+		async (req: Request, res: Response): Promise<Response> => {
 			try {
 				const user = await getCurrentUser(req);
 
@@ -820,10 +843,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 				// Remove sensitive information before sending
 				const { password, ...userData } = user;
-				res.json(userData);
+				return res.json(userData);
 			} catch (error) {
 				console.error("Error fetching user profile:", error);
-				res.status(500).json({ message: "Failed to fetch user profile" });
+				return res
+					.status(500)
+					.json({ message: "Failed to fetch user profile" });
 			}
 		}
 	);
@@ -864,4 +889,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 	const httpServer = createServer(app);
 	return httpServer;
+}
+
+function generateOrderNumber() {
+	return `ORD-${Date.now()}`; // Example: Generates a unique order number based on the current timestamp
 }

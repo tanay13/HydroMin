@@ -1,8 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import cors from "cors";
-import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
-import { setupDatabase } from "./db-setup";
+import { registerRoutes } from "./routes.js";
+import { setupVite, serveStatic, log } from "./vite.js";
+import { setupDatabase } from "./db-setup.js";
 
 const app = express();
 
@@ -12,7 +12,7 @@ app.use(
 		origin: true,
 		credentials: true,
 		methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-		allowedHeaders: ["Content-Type", "Authorization"],
+		allowedHeaders: ["Content-Type", "Authorization", "Accept"],
 	})
 );
 

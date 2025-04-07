@@ -1,6 +1,6 @@
-import { db } from "./db";
-import * as schema from "@shared/schema";
-import { hashPassword } from "./auth";
+import { db } from "./db.js";
+import * as schema from "@shared/schema.js";
+import { hashPassword } from "./auth.js";
 import { sql } from "drizzle-orm";
 
 async function resetDatabase() {
