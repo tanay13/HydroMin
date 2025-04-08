@@ -32,6 +32,8 @@ import {
 	getCurrentUser,
 } from "./auth.js";
 import { type RowDataPacket } from "mysql2";
+import { eq } from "drizzle-orm";
+import { inventory } from "../shared/schema.js";
 
 // Add type for inventory entry
 interface InventoryEntry {
@@ -83,8 +85,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 					end,
 				});
 
-				const startDate = start ? new Date(start as string) : undefined;
-				const endDate = end ? new Date(end as string) : undefined;
+				let startDate: Date | undefined;
+				let endDate: Date | undefined;
+
+				if (start && end) {
+					// Set the start date to the beginning of the day (00:00:00)
+					startDate = new Date(start as string);
+					startDate.setHours(0, 0, 0, 0);
+
+					// Set the end date to the end of the day (23:59:59.999)
+					endDate = new Date(end as string);
+					endDate.setHours(23, 59, 59, 999);
+				}
 
 				const inventoryHistory = await storage.getInventoryHistory(
 					startDate,
@@ -153,10 +165,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 			try {
 				const validatedData = inventoryEntrySchema.parse(req.body);
 
-				// Check if inventory for this bottle size already exists
-				const existingInventory = await storage.getInventoryByBottleSize(
-					validatedData.bottleSize
-				);
+				// Try to get existing inventory, but don't throw if not found
+				let existingInventory;
+				try {
+					existingInventory = await storage.getInventoryByBottleSize(
+						validatedData.bottleSize
+					);
+				} catch (error) {
+					// If inventory doesn't exist, that's fine - we'll create it
+					existingInventory = null;
+				}
 
 				if (existingInventory) {
 					// Update existing inventory
@@ -255,14 +273,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 						formattedEndDate,
 					});
 
-					// Use MySQL-compatible date comparison
+					// Use MySQL-compatible date comparison with proper total calculation
 					const query = `
           SELECT 
             o.customer_name as merchant,
             SUM(oi.quantity) as total_quantity,
-            SUM(oi.quantity * oi.price_per_unit) as total_sales
-          FROM order_items oi
-          JOIN orders o ON o.id = oi.order_id
+            CAST(SUM(oi.subtotal) AS DECIMAL(10,2)) as total_sales
+          FROM orders o
+          JOIN order_items oi ON o.id = oi.order_id
           WHERE DATE(o.order_date) >= DATE(?)
             AND DATE(o.order_date) <= DATE(?)
           GROUP BY o.customer_name
@@ -272,6 +290,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 						formattedStartDate,
 						formattedEndDate,
 					]);
+
+					// Log the results for debugging
+					console.log("Query results:", result);
+
 					res.json(result);
 				} else {
 					const orders = await storage.getAllOrders();
@@ -315,13 +337,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
 			try {
 				const orderData = orderEntrySchema.parse(req.body);
 
-				// Create the order
+				// Check inventory availability for all items first
+				for (const item of orderData.items) {
+					try {
+						const [currentInventory] = await db
+							.select()
+							.from(inventory)
+							.where(eq(inventory.bottleSize, item.bottleSize));
+
+						if (!currentInventory) {
+							return res.status(400).json({
+								message: `No inventory found for bottle size: ${item.bottleSize}`,
+							});
+						}
+
+						if (currentInventory.inStock < item.quantity) {
+							return res.status(400).json({
+								message: `Insufficient inventory for ${item.bottleSize}. Requested: ${item.quantity}, Available: ${currentInventory.inStock}`,
+							});
+						}
+					} catch (error) {
+						return res.status(500).json({
+							message: `Error checking inventory for ${item.bottleSize}`,
+						});
+					}
+				}
+
+				// Create the order only if all inventory checks pass
+				const bottleSizes = [
+					...new Set(orderData.items.map((item) => item.bottleSize)),
+				].join(",");
+				const quantities: Record<string, number> = {};
+				const prices: Record<string, string> = {};
+				orderData.items.forEach((item) => {
+					quantities[item.bottleSize] = item.quantity;
+					prices[item.bottleSize] = item.pricePerUnit.toString();
+				});
+
 				const order = await storage.createOrder({
 					orderNumber: generateOrderNumber(),
 					customerName: orderData.customerName,
 					orderDate: new Date(orderData.orderDate),
 					status: "in_progress",
 					notes: orderData.notes,
+					bottleSizes,
+					bottleQuantities: JSON.stringify(quantities),
+					bottlePrices: JSON.stringify(prices),
 					total: String(
 						orderData.items.reduce(
 							(sum, item) => sum + item.quantity * item.pricePerUnit,
@@ -331,7 +392,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 					entryTime: new Date(),
 				});
 
-				// Create order items
+				// Create order items and update inventory
 				for (const item of orderData.items) {
 					await storage.createOrderItem({
 						orderId: order.id,

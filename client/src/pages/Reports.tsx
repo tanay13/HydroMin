@@ -396,9 +396,7 @@ export default function Reports() {
 												</TableCell>
 												<TableCell className="text-right">
 													₹
-													{convertToRupees(
-														Number(order.total_sales)
-													).toLocaleString(undefined, {
+													{Number(order.total_sales).toLocaleString(undefined, {
 														minimumFractionDigits: 2,
 														maximumFractionDigits: 2,
 													})}
@@ -417,15 +415,15 @@ export default function Reports() {
 											</TableCell>
 											<TableCell className="text-right font-bold">
 												₹
-												{convertToRupees(
-													orders.reduce((sum, order) => {
+												{orders
+													.reduce((sum, order) => {
 														const sales = Number(order.total_sales);
 														return sum + (isNaN(sales) ? 0 : sales);
 													}, 0)
-												).toLocaleString(undefined, {
-													minimumFractionDigits: 2,
-													maximumFractionDigits: 2,
-												})}
+													.toLocaleString(undefined, {
+														minimumFractionDigits: 2,
+														maximumFractionDigits: 2,
+													})}
 											</TableCell>
 										</TableRow>
 									</TableBody>

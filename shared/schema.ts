@@ -104,6 +104,9 @@ export const orders = mysqlTable("orders", {
 	orderDate: datetime("order_date").notNull(),
 	status: varchar("status", { length: 20 }).notNull().default("in_progress"),
 	notes: varchar("notes", { length: 1000 }),
+	bottleSizes: varchar("bottle_sizes", { length: 255 }).notNull(),
+	bottleQuantities: varchar("bottle_quantities", { length: 255 }).notNull(),
+	bottlePrices: varchar("bottle_prices", { length: 255 }).notNull(),
 	total: decimal("total", { precision: 10, scale: 2 }).notNull(),
 	entryTime: datetime("entry_time").notNull(),
 	createdAt: datetime("created_at")
@@ -202,6 +205,9 @@ export const insertOrderSchema = createInsertSchema(orders).pick({
 	orderDate: true,
 	status: true,
 	notes: true,
+	bottleSizes: true,
+	bottleQuantities: true,
+	bottlePrices: true,
 	total: true,
 	entryTime: true,
 });

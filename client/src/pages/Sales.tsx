@@ -78,11 +78,11 @@ export default function Sales() {
 	const salesByBottleSize = data?.salesByBottleSize || [];
 	const salesByDate = data?.salesByDate || {};
 
-	// Format data for charts and convert to rupees
+	// Format data for charts
 	const salesTrendData = Object.entries(salesByDate)
 		.map(([date, value]) => ({
 			date,
-			sales: convertToRupees(Number(value)),
+			sales: Number(value),
 		}))
 		.sort((a, b) => a.date.localeCompare(b.date));
 
@@ -90,7 +90,7 @@ export default function Sales() {
 	const pieData = salesByBottleSize.map(
 		(item: { bottleSize: string; revenue: number }) => ({
 			name: item.bottleSize,
-			value: convertToRupees(item.revenue),
+			value: Number(item.revenue),
 		})
 	);
 
@@ -99,7 +99,7 @@ export default function Sales() {
 		(item: { bottleSize: string; soldQuantity: number; revenue: number }) => ({
 			name: item.bottleSize,
 			sold: item.soldQuantity,
-			revenue: convertToRupees(item.revenue),
+			revenue: Number(item.revenue),
 		})
 	);
 

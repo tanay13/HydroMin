@@ -89,6 +89,9 @@ async function initializeDatabase() {
 				orderDate: now,
 				status: orderStatuses[1], // "completed"
 				total: "35.0",
+				bottleSizes: "250ML,500ML",
+				bottleQuantities: JSON.stringify({ "250ML": 5, "500ML": 3 }),
+				bottlePrices: JSON.stringify({ "250ML": "2.5", "500ML": "4.0" }),
 				entryTime: now,
 			},
 			{
@@ -97,9 +100,12 @@ async function initializeDatabase() {
 				orderDate: now,
 				status: orderStatuses[1], // "completed"
 				total: "20.0",
+				bottleSizes: "500ML,1L",
+				bottleQuantities: JSON.stringify({ "500ML": 2, "1L": 1 }),
+				bottlePrices: JSON.stringify({ "500ML": "4.0", "1L": "7.0" }),
 				entryTime: now,
 			},
-		];
+		].map((item) => insertOrderSchema.parse(item));
 
 		await db.insert(orders).values(orderItems);
 
